@@ -1,0 +1,3458 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>استوديو عكس الصوت | Audio Reverser</title>
+    <!-- تحميل Tailwind CSS للتصميم المتجاوب والعصري -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- تحميل خط Tajawal العربي العصري -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <!-- تحميل أيقونات Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Tajawal', 'sans-serif'],
+                    },
+                    colors: {
+                        studio: {
+                            bg: 'var(--studio-bg)',
+                            card: 'var(--studio-card)',
+                            surface: 'var(--studio-surface)',
+                            border: 'var(--studio-border)',
+                            accent: '#6366f1',
+                            accentHover: '#4f46e5',
+                            cyan: '#06b6d4',
+                            rose: '#f43f5e',
+                            emerald: '#10b981'
+                        }
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'shake': 'shake 0.45s cubic-bezier(.36,.07,.19,.97) both',
+                        'pop-in': 'popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    },
+                    keyframes: {
+                        shake: {
+                            '10%, 90%': { transform: 'translate3d(-2px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(4px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-6px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(6px, 0, 0)' }
+                        },
+                        popIn: {
+                            '0%': { opacity: '0', transform: 'scale(0.92) translateY(8px)' },
+                            '100%': { opacity: '1', transform: 'scale(1) translateY(0)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* متغيرات الألوان للوضع المنوّر والوضع الداكن */
+        :root {
+            --studio-bg: #f4f4f6;
+            --studio-card: #ffffff;
+            --studio-surface: #e4e4e7;
+            --studio-border: #d4d4d8;
+            --grid-line: rgba(0, 0, 0, 0.045);
+            --wave-unplayed: #cbd5e1;
+            --wave-playhead: #09090b;
+        }
+        html.dark {
+            --studio-bg: #09090b;
+            --studio-card: #121216;
+            --studio-surface: #1c1c22;
+            --studio-border: #27272f;
+            --grid-line: rgba(255, 255, 255, 0.03);
+            --wave-unplayed: #27272f;
+            --wave-playhead: #ffffff;
+        }
+        /* خلفيات الموقع المخصصة المستوحاة من الصور المرفقة */
+        body.bg-preset-meteors {
+            background-image:
+                radial-gradient(circle at 75% 18%, rgba(56, 189, 248, 0.35) 0%, transparent 45%),
+                radial-gradient(circle at 20% 25%, rgba(168, 85, 247, 0.3) 0%, transparent 40%),
+                linear-gradient(180deg, #0b0d2c 0%, #172554 45%, #1e1b4b 75%, #090a1f 100%) !important;
+            background-attachment: fixed;
+            background-size: cover;
+        }
+        body.bg-preset-eye {
+            background-image:
+                radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.14) 0%, rgba(120, 53, 15, 0.22) 22%, rgba(9, 9, 11, 0.96) 55%),
+                repeating-radial-gradient(circle at 50% 35%, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 8px) !important;
+            background-color: #070709 !important;
+            background-attachment: fixed;
+        }
+        body.bg-custom-image {
+            background-size: cover !important;
+            background-position: center !important;
+            background-attachment: fixed !important;
+        }
+        /* تخصيص شريط التمرير وإخفاء تحديد النص عن الأزرار */
+        body {
+            background-color: var(--studio-bg);
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .studio-glow {
+            box-shadow: 0 0 40px -10px rgba(99, 102, 241, 0.25);
+        }
+        .record-glow {
+            box-shadow: 0 0 30px -5px rgba(244, 63, 94, 0.5);
+        }
+        canvas {
+            touch-action: none;
+        }
+        /* تأثير الخلفية الشبكية المستوحى من استوديوهات الصوت */
+        .bg-grid {
+            background-size: 32px 32px;
+            background-image: 
+                linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+        }
+    </style>
+</head>
+<body class="bg-studio-bg text-zinc-900 dark:text-zinc-100 bg-grid min-h-screen flex flex-col justify-between selection:bg-studio-accent selection:text-white">
+
+    <!-- الرأس (Header) -->
+    <header class="border-b border-studio-border bg-studio-card/85 backdrop-blur-md sticky top-0 z-30 transition-colors duration-300">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <!-- شعار الموقع الاحترافي (Logo) -->
+                <div class="relative flex items-center justify-center">
+                    <div class="absolute -inset-1 rounded-2xl bg-gradient-to-tr from-studio-accent via-purple-500 to-studio-cyan opacity-75 blur-sm animate-pulse-fast"></div>
+                    <div class="relative w-11 h-11 rounded-2xl bg-gradient-to-tr from-studio-accent to-studio-cyan flex items-center justify-center shadow-lg text-white">
+                        <svg class="w-6 h-6 transform scale-x-[-1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 10v3"/>
+                            <path d="M6 6v11"/>
+                            <path d="M10 3v18"/>
+                            <path d="M14 8v8"/>
+                            <path d="M18 5v14"/>
+                            <path d="M22 10v3"/>
+                        </svg>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-l from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-400 bg-clip-text text-transparent">
+                            استوديو عكس الصوت
+                        </h1>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-studio-accent/20 text-studio-accent border border-studio-accent/30 tracking-wide">REV v2.0</span>
+                    </div>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">معالجة صوتية فورية وتحدي التخمين</p>
+                </div>
+            </div>
+
+            <!-- أدوات التحكم العلوية: اختيار الوضع + الحساب الشخصي + تبديل المظهر -->
+            <div class="flex flex-wrap items-center gap-2.5">
+                <!-- اختيار الوضع: "وضعك" (عكس عادي / تخمين / أونلاين) -->
+                <div class="flex items-center gap-2 sm:gap-3 bg-studio-bg/90 border border-studio-border px-3 py-1.5 rounded-2xl shadow-inner">
+                    <span class="text-xs font-extrabold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5 pl-1">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500 dark:text-amber-400"></i>
+                        <span>وضعك:</span>
+                    </span>
+                    <div class="inline-flex p-1 bg-studio-surface rounded-xl border border-studio-border/80">
+                        <button id="appModeNormalBtn" onclick="setAppMode('normal')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 bg-studio-accent text-white shadow">
+                            <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+                            <span>عكس عادي</span>
+                        </button>
+                        <button id="appModeGuessBtn" onclick="setAppMode('guess')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
+                            <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
+                            <span>تخمين</span>
+                        </button>
+                        <button id="appModeOnlineBtn" onclick="setAppMode('online')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
+                            <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+                            <span>أونلاين</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- زر الحساب والملف الشخصي -->
+                <button id="profileHeaderBtn" onclick="openProfileModal()" class="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-studio-bg/90 hover:bg-studio-surface border border-studio-border text-xs sm:text-sm font-bold text-zinc-800 dark:text-zinc-200 transition-all active:scale-95 shadow-sm">
+                    <div id="headerAvatarContainer" class="w-7 h-7 rounded-full bg-gradient-to-tr from-studio-accent to-studio-cyan flex items-center justify-center text-sm shadow-inner overflow-hidden text-white">
+                        🎧
+                    </div>
+                    <div class="text-right hidden sm:block">
+                        <div id="headerDisplayName" class="text-xs font-extrabold leading-tight">لاعب زائر</div>
+                        <div id="headerUsername" class="text-[10px] text-zinc-500 font-mono" dir="ltr">@guest</div>
+                    </div>
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-zinc-400"></i>
+                </button>
+
+                <!-- زر اختيار خلفية الاستوديو -->
+                <button onclick="openBackgroundModal()" title="تغيير خلفية الاستوديو" class="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-studio-bg/90 hover:bg-studio-surface border border-studio-border text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 transition-all active:scale-95 shadow-sm">
+                    <i data-lucide="image" class="w-4 h-4 text-studio-cyan"></i>
+                    <span class="hidden md:inline">الخلفيات</span>
+                </button>
+
+                <!-- زر التبديل بين الوضع الداكن والوضع المنور -->
+                <button id="themeToggleBtn" onclick="toggleTheme()" title="تبديل المظهر (دارك / منوّر)" class="flex items-center gap-2 px-3 py-2.5 rounded-2xl bg-studio-bg/90 hover:bg-studio-surface border border-studio-border text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 transition-all active:scale-95 shadow-sm">
+                    <i id="themeToggleIcon" data-lucide="sun" class="w-4 h-4 text-amber-500"></i>
+                    <span id="themeToggleText" class="hidden md:inline">وضع منوّر</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- نافذة الملف الشخصي وإنشاء الحساب / تسجيل الدخول بجوجل (Modal) -->
+    <div id="profileModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-pop-in">
+        <div class="bg-studio-card border border-studio-border rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeProfileModal()" class="absolute top-5 left-5 p-2 rounded-xl bg-studio-surface hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-300 transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-11 h-11 rounded-2xl bg-studio-accent/15 border border-studio-accent/30 flex items-center justify-center text-studio-accent">
+                    <i data-lucide="user-circle" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-extrabold text-zinc-900 dark:text-white">ملفك الشخصي وحسابك</h3>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">تسجيل الدخول مطلوب لتعديل الاسم واليوزر ودخول الأونلاين</p>
+                </div>
+            </div>
+
+            <!-- شريط حالة الحظر الدائم (يظهر فقط إذا تم حظر الحساب بسبب محتوى 18+) -->
+            <div id="bannedAccountBanner" class="hidden mb-4 p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-700 dark:text-rose-300 text-xs leading-relaxed">
+                <div class="font-extrabold text-sm mb-1 flex items-center gap-1.5">
+                    <i data-lucide="ban" class="w-4 h-4"></i>
+                    <span>تم إغلاق الحساب نهائياً (حظر دائم)</span>
+                </div>
+                <p>تم رصد مخالفة لسياسة المحتوى (رفع صورة خلفية 18+). تم تحويل حسابك إلى وضع <strong>Offline فقط</strong> ولا يمكنك تسجيل الدخول أو دخول الأونلاين مرة أخرى.</p>
+            </div>
+
+            <!-- قسم تسجيل الدخول عبر جوجل + تحذير الأمان الإلزامي -->
+            <div id="googleAuthSection" class="mb-5 p-4 rounded-2xl bg-studio-bg border border-studio-border">
+                <div id="googleSignedOutView" class="flex flex-col gap-3">
+                    <!-- تحذير ما قبل تسجيل الدخول -->
+                    <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed">
+                        <div class="font-extrabold flex items-center gap-1.5 mb-1">
+                            <i data-lucide="shield-alert" class="w-3.5 h-3.5 shrink-0"></i>
+                            <span>تحذير هام قبل تسجيل الدخول:</span>
+                        </div>
+                        <ul class="list-disc list-inside space-y-0.5">
+                            <li>يُمنع منعاً باتاً رفع أي صور خلفية مخلة أو <strong>18+</strong>.</li>
+                            <li>أي محاولة لرفع محتوى غير لائق ستؤدي إلى <strong>إغلاق حسابك نهائياً</strong> وحظرك من الأونلاين للأبد.</li>
+                            <li>اللعب الفردي (العكس العادي والتخمين) متاح بدون حساب.</li>
+                        </ul>
+                    </div>
+
+                    <button id="googleLoginBtn" onclick="signInWithGoogleHandler()" class="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-zinc-100 text-zinc-900 border border-zinc-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 shadow-sm transition-all active:scale-95">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24z"/>
+                            <path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14z"/>
+                            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"/>
+                        </svg>
+                        <span>أوافق على الشروط وأسجل الدخول بحساب Google</span>
+                    </button>
+                </div>
+
+                <div id="googleSignedInView" class="hidden flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2.5 overflow-hidden">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                        <div class="truncate">
+                            <div class="text-xs font-bold text-zinc-900 dark:text-white truncate">متصل بحساب Google</div>
+                            <div id="googleUserEmail" class="text-[11px] text-zinc-500 truncate" dir="ltr">user@gmail.com</div>
+                        </div>
+                    </div>
+                    <button onclick="signOutGoogleHandler()" class="px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 text-xs font-bold transition-colors shrink-0">
+                        تسجيل خروج
+                    </button>
+                </div>
+            </div>
+
+            <!-- نموذج تعديل الأفاتار، الاسم المعروض، واليوزر (مقفل لغير المسجلين) -->
+            <div id="profileEditFieldsWrapper" class="flex flex-col gap-4 relative">
+                <div id="profileLockedOverlay" class="hidden p-3 rounded-xl bg-studio-surface/90 border border-studio-border text-center text-xs font-bold text-zinc-600 dark:text-zinc-300">
+                    🔒 يجب تسجيل الدخول بحساب Google لتتمكن من تغيير الاسم المعروض واليوزر والوصول للأونلاين.
+                </div>
+
+                <!-- اختيار الأفاتار -->
+                <div>
+                    <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-2">اختر الأفاتار الخاص بك:</label>
+                    <div id="avatarPickerGrid" class="grid grid-cols-6 gap-2">
+                        <!-- يتم توليد الأفاتارات عبر JS -->
+                    </div>
+                </div>
+
+                <!-- الاسم المعروض (Display Name) -->
+                <div>
+                    <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">الاسم المعروض (Display Name):</label>
+                    <input type="text" id="profileDisplayNameInput" maxlength="24" placeholder="مثال: أسطورة الصوت" class="w-full bg-studio-bg border border-studio-border focus:border-studio-accent rounded-xl px-3.5 py-2.5 text-sm text-zinc-900 dark:text-white outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                </div>
+
+                <!-- اسم المستخدم (Username) -->
+                <div>
+                    <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">اسم المستخدم (Username):</label>
+                    <div class="relative flex items-center" dir="ltr">
+                        <span class="absolute left-3.5 text-zinc-400 font-mono text-sm">@</span>
+                        <input type="text" id="profileUsernameInput" maxlength="18" placeholder="sound_master" class="w-full bg-studio-bg border border-studio-border focus:border-studio-accent rounded-xl pl-8 pr-3.5 py-2.5 text-sm font-mono text-zinc-900 dark:text-white outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    </div>
+                    <p class="text-[11px] text-zinc-500 mt-1">حروف إنجليزية وأرقام وشرطة سفلية فقط</p>
+                </div>
+
+                <button id="saveProfileBtn" onclick="saveUserProfile()" class="mt-2 w-full py-3 px-5 rounded-2xl font-bold text-sm bg-studio-accent hover:bg-studio-accentHover text-white shadow-lg shadow-studio-accent/25 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>حفظ وتطبيق الهوية</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة اختيار الخلفيات ونظام فحص الصور 18+ -->
+    <div id="backgroundModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-pop-in">
+        <div class="bg-studio-card border border-studio-border rounded-3xl max-w-lg w-full p-6 shadow-2xl relative">
+            <button onclick="closeBackgroundModal()" class="absolute top-5 left-5 p-2 rounded-xl bg-studio-surface hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-300">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+
+            <div class="flex items-center gap-3 mb-5">
+                <div class="w-11 h-11 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-studio-cyan">
+                    <i data-lucide="wallpaper" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-extrabold text-zinc-900 dark:text-white">خلفيات الاستوديو</h3>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">اختر من الخلفيات الجاهزة أو ارفع خلفيتك الخاصة (للمسجلين)</p>
+                </div>
+            </div>
+
+            <!-- الخلفيات الجاهزة المستوحاة من الصور المرفقة -->
+            <div class="grid grid-cols-3 gap-3 mb-5">
+                <button onclick="applyPresetBackground('default')" class="p-3 rounded-2xl border border-studio-border bg-studio-bg hover:border-studio-accent text-center transition-all flex flex-col items-center gap-2">
+                    <div class="w-full h-16 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-xs text-zinc-400">الافتراضية</div>
+                    <span class="text-xs font-bold">شبكة الاستوديو</span>
+                </button>
+
+                <button onclick="applyPresetBackground('meteors')" class="p-3 rounded-2xl border border-studio-border bg-studio-bg hover:border-studio-cyan text-center transition-all flex flex-col items-center gap-2">
+                    <div class="w-full h-16 rounded-xl bg-gradient-to-b from-indigo-950 via-blue-900 to-cyan-700 flex items-center justify-center text-xl">🌠</div>
+                    <span class="text-xs font-bold">سماء الشهب</span>
+                </button>
+
+                <button onclick="applyPresetBackground('eye')" class="p-3 rounded-2xl border border-studio-border bg-studio-bg hover:border-amber-500 text-center transition-all flex flex-col items-center gap-2">
+                    <div class="w-full h-16 rounded-xl bg-zinc-950 border border-amber-900/50 flex items-center justify-center text-xl">👁️</div>
+                    <span class="text-xs font-bold">عين الأعماق</span>
+                </button>
+            </div>
+
+            <!-- رفع خلفية مخصصة للمسجلين فقط مع فحص 18+ -->
+            <div class="p-4 rounded-2xl bg-studio-bg border border-studio-border">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-extrabold text-zinc-800 dark:text-zinc-200">رفع خلفية مخصصة من جهازك</span>
+                    <span class="px-2 py-0.5 text-[10px] rounded-md bg-rose-500/15 text-rose-600 dark:text-rose-400 font-bold">فحص تلقائي 18+</span>
+                </div>
+                <p class="text-[11px] text-zinc-500 mb-3">متاح للمسجلين بحساب فقط. يتم فحص الصورة آلياً؛ أي محتوى 18+ يؤدي لإغلاق الحساب فوراً للأبد.</p>
+
+                <div id="bgUploadGuestNotice" class="p-3 rounded-xl bg-studio-surface text-xs text-center font-bold text-zinc-600 dark:text-zinc-300">
+                    🔒 سجل الدخول بحساب Google لتفعيل رفع الخلفيات المخصصة
+                </div>
+
+                <div id="bgUploadSignedInArea" class="hidden">
+                    <label for="customBgFileInput" id="customBgUploadLabel" class="w-full py-3 px-4 rounded-xl bg-studio-accent hover:bg-studio-accentHover text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-all">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        <span id="customBgUploadText">اختر صورة لرفعها وفحصها</span>
+                        <input type="file" id="customBgFileInput" accept="image/*" class="hidden" onchange="handleCustomBackgroundUpload(event)">
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="max-w-4xl w-full mx-auto px-4 py-8 flex-grow flex flex-col gap-6">
+
+        <!-- ========================================== -->
+        <!-- ساحة تحديات الأونلاين ونظام الغرف (Online Rooms & Host) -->
+        <!-- ========================================== -->
+        <section id="onlineArenaSection" class="hidden flex-col gap-5 animate-pop-in">
+            <!-- شريط علوي لساحة الأونلاين -->
+            <div class="rounded-3xl p-6 bg-gradient-to-l from-cyan-600/20 via-indigo-600/15 to-studio-card border border-cyan-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-studio-cyan to-studio-accent flex items-center justify-center text-white shadow-lg shadow-cyan-500/25 shrink-0">
+                        <i data-lucide="globe" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-lg font-extrabold text-zinc-900 dark:text-white">غرف الأونلاين ونظام الهوست 🌐</h2>
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                مباشر
+                            </span>
+                        </div>
+                        <p class="text-xs text-zinc-600 dark:text-zinc-300 mt-0.5">أنشئ غرفة عامة أو خاصة، وتحكم بطلبات الدخول بصفتك الـ Host!</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="openCreateRoomModal()" class="px-4 py-2.5 rounded-xl bg-studio-accent hover:bg-studio-accentHover text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all active:scale-95">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>إنشاء غرفة جديدة</span>
+                    </button>
+                    <button onclick="openJoinPrivateRoomModal()" class="px-3.5 py-2.5 rounded-xl bg-studio-bg/90 hover:bg-studio-surface border border-studio-border text-xs font-bold text-zinc-700 dark:text-zinc-200 flex items-center gap-1.5 transition-all">
+                        <i data-lucide="key-round" class="w-3.5 h-3.5 text-amber-500"></i>
+                        <span>دخول غرفة خاصة</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- الغرفة النشطة حالياً (تظهر عند إنشاء غرفة أو الانضمام لغرفة) -->
+            <div id="activeRoomPanel" class="hidden bg-studio-card border-2 border-studio-cyan/40 rounded-3xl p-6 studio-glow flex-col gap-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-studio-border">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-studio-cyan">
+                            <i data-lucide="door-open" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 id="activeRoomTitle" class="text-base font-extrabold text-zinc-900 dark:text-white">اسم الغرفة</h3>
+                                <span id="activeRoomTypeBadge" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-500/20 text-indigo-400">عامة</span>
+                            </div>
+                            <div class="text-xs text-zinc-500 flex items-center gap-3 mt-0.5">
+                                <span>الهوست: <strong id="activeRoomHostName" class="text-zinc-700 dark:text-zinc-300">@host</strong></span>
+                                <span id="activeRoomCodeBox" class="hidden font-mono bg-studio-bg px-2 py-0.5 rounded border border-studio-border text-amber-500">الرمز: <strong id="activeRoomCodeText">----</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="leaveCurrentRoom()" class="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto">
+                        <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                        <span>مغادرة الغرفة</span>
+                    </button>
+                </div>
+
+                <!-- إشعارات طلبات الدخول للهوست (Host Approval Queue) -->
+                <div id="hostJoinRequestsBox" class="hidden p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30">
+                    <h4 class="text-xs font-extrabold text-amber-700 dark:text-amber-300 mb-2.5 flex items-center gap-1.5">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        <span>طلبات دخول تنتظر موافقتك (Host):</span>
+                    </h4>
+                    <div id="hostJoinRequestsList" class="flex flex-col gap-2"></div>
+                </div>
+
+                <!-- قائمة الأعضاء المقبولين داخل الغرفة -->
+                <div>
+                    <div class="text-xs font-bold text-zinc-500 mb-2">اللاعبون المتواجدون في الغرفة:</div>
+                    <div id="activeRoomMembersList" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <!-- تحديات الغرفة الحالية -->
+                <div class="pt-3 border-t border-studio-border">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-extrabold text-zinc-900 dark:text-white">مقاطع وتحديات هذه الغرفة</h4>
+                        <span class="text-[11px] text-zinc-500">سجّل صوتك بالأسفل واضغط "نشر تحدي أونلاين" لإرساله للغرفة</span>
+                    </div>
+                    <div id="onlineChallengesList" class="grid grid-cols-1 gap-4"></div>
+                </div>
+            </div>
+
+            <!-- قائمة الغرف العامة المتاحة للانضمام -->
+            <div id="publicRoomsBrowser" class="bg-studio-card border border-studio-border rounded-3xl p-6 studio-glow">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-extrabold text-zinc-900 dark:text-white flex items-center gap-2">
+                        <i data-lucide="users" class="w-5 h-5 text-studio-cyan"></i>
+                        <span>الغرف العامة المتاحة</span>
+                        <span id="publicRoomsCount" class="px-2 py-0.5 text-xs rounded-full bg-studio-surface text-zinc-600 dark:text-zinc-300 font-mono">0</span>
+                    </h3>
+                    <span class="text-[11px] text-zinc-500">يتطلب موافقة الهوست للدخول</span>
+                </div>
+
+                <div id="publicRoomsList" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- يتم تعبئة الغرف العامة هنا -->
+                </div>
+            </div>
+        </section>
+
+        <!-- نافذة إنشاء غرفة (عامة / خاصة) -->
+        <div id="createRoomModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-pop-in">
+            <div class="bg-studio-card border border-studio-border rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+                <button onclick="closeCreateRoomModal()" class="absolute top-5 left-5 p-2 rounded-xl bg-studio-surface text-zinc-500">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+                <h3 class="text-lg font-extrabold text-zinc-900 dark:text-white mb-1">إنشاء غرفة أونلاين جديدة</h3>
+                <p class="text-xs text-zinc-500 mb-4">ستكون أنت الـ Host وتتحكم بقبول أو رفض من يطلب الدخول.</p>
+
+                <div class="flex flex-col gap-4">
+                    <div>
+                        <label class="block text-xs font-bold mb-1.5">اسم الغرفة:</label>
+                        <input type="text" id="newRoomNameInput" maxlength="28" placeholder="مثال: تحدي الأصوات المعكوسة" class="w-full bg-studio-bg border border-studio-border rounded-xl px-4 py-2.5 text-sm outline-none focus:border-studio-accent">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold mb-1.5">نوع الغرفة:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" id="roomTypePublicBtn" onclick="selectNewRoomType('public')" class="py-2.5 px-3 rounded-xl border border-studio-accent bg-studio-accent/15 text-studio-accent font-bold text-xs flex items-center justify-center gap-1.5">
+                                <i data-lucide="globe" class="w-4 h-4"></i>
+                                <span>غرفة عامة</span>
+                            </button>
+                            <button type="button" id="roomTypePrivateBtn" onclick="selectNewRoomType('private')" class="py-2.5 px-3 rounded-xl border border-studio-border bg-studio-bg text-zinc-500 font-bold text-xs flex items-center justify-center gap-1.5">
+                                <i data-lucide="lock" class="w-4 h-4"></i>
+                                <span>غرفة خاصة (برمز)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button onclick="createOnlineRoom()" class="w-full py-3 rounded-2xl bg-studio-accent hover:bg-studio-accentHover text-white font-bold text-sm shadow-lg transition-all">
+                        إنشاء الغرفة وبدء الاستضافة
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- نافذة الدخول لغرفة خاصة برمز -->
+        <div id="joinPrivateRoomModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-pop-in">
+            <div class="bg-studio-card border border-studio-border rounded-3xl max-w-sm w-full p-6 shadow-2xl relative">
+                <button onclick="closeJoinPrivateRoomModal()" class="absolute top-5 left-5 p-2 rounded-xl bg-studio-surface text-zinc-500">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+                <h3 class="text-lg font-extrabold text-zinc-900 dark:text-white mb-1">دخول غرفة خاصة</h3>
+                <p class="text-xs text-zinc-500 mb-4">أدخل رمز الغرفة المكون من 5 أحرف لإرسال طلب دخول للهوست.</p>
+
+                <div class="flex flex-col gap-3">
+                    <input type="text" id="privateRoomCodeInput" maxlength="6" placeholder="مثال: A7X9K" dir="ltr" class="w-full text-center font-mono uppercase tracking-widest text-lg bg-studio-bg border border-studio-border rounded-xl px-4 py-3 outline-none focus:border-amber-500">
+                    <button onclick="requestJoinPrivateRoomByCode()" class="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-sm shadow-lg transition-all">
+                        إرسال طلب دخول للهوست
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- نافذة دعوة سيرفر الديسكورد (تظهر تلقائياً عند تسجيل الدخول) -->
+        <div id="discordInviteModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-pop-in">
+            <div class="bg-studio-card border-2 border-[#5865F2]/50 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative text-center overflow-hidden">
+                <!-- توهج خلفي بلون ديسكورد -->
+                <div class="absolute -top-20 -right-20 w-44 h-44 bg-[#5865F2]/25 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -bottom-20 -left-20 w-44 h-44 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+                <button onclick="closeDiscordInviteModal()" title="إغلاق" class="absolute top-5 left-5 p-2 rounded-xl bg-studio-surface hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-300 transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+
+                <!-- أيقونة ديسكورد -->
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#5865F2] flex items-center justify-center text-white shadow-xl shadow-[#5865F2]/30">
+                    <svg class="w-9 h-9" viewBox="0 0 127.14 96.36" fill="currentColor">
+                        <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/>
+                    </svg>
+                </div>
+
+                <span class="inline-block px-3 py-1 rounded-full text-[11px] font-extrabold bg-[#5865F2]/15 text-[#5865F2] border border-[#5865F2]/30 mb-2">
+                    أهلاً بك في المجتمع الرسمي! 🎮
+                </span>
+                <h3 class="text-xl font-extrabold text-zinc-900 dark:text-white mb-2">انضم إلى سيرفر الديسكورد</h3>
+                <p class="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed mb-5">
+                    تحدَّ اللاعبين، شارك مقاطعك المعكوسة المضحكة، واحصل على رموز الغرف الخاصة مباشرة في سيرفرنا الرسمي!
+                </p>
+
+                <!-- صندوق الرابط السريع -->
+                <div class="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-studio-bg border border-studio-border mb-5" dir="ltr">
+                    <span class="text-xs font-mono text-zinc-600 dark:text-zinc-300 truncate px-2">https://discord.gg/63EQnajtwX</span>
+                    <button onclick="copyDiscordInviteLink()" class="px-3 py-1.5 rounded-xl bg-studio-surface hover:bg-zinc-300 dark:hover:bg-zinc-700 text-xs font-bold text-zinc-800 dark:text-zinc-200 shrink-0 transition-all">
+                        نسخ الرابط
+                    </button>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-2.5">
+                    <a href="https://discord.gg/63EQnajtwX" target="_blank" rel="noopener noreferrer" onclick="closeDiscordInviteModal()" class="flex-grow py-3.5 px-5 rounded-2xl bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold text-sm shadow-lg shadow-[#5865F2]/30 transition-all flex items-center justify-center gap-2 active:scale-95">
+                        <i data-lucide="external-link" class="w-4 h-4"></i>
+                        <span>دخول سيرفر الديسكورد الآن</span>
+                    </a>
+                    <button onclick="closeDiscordInviteModal()" class="py-3.5 px-4 rounded-2xl bg-studio-surface hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 font-bold text-xs transition-all">
+                        لاحقاً
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- شريط توضيحي عند تفعيل وضع التخمين -->
+        <div id="guessBanner" class="hidden rounded-3xl p-6 bg-gradient-to-l from-indigo-600/20 via-purple-600/15 to-studio-card border border-indigo-500/30 flex flex-col gap-6 animate-pop-in">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 shrink-0">
+                        <i data-lucide="gamepad-2" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-extrabold text-indigo-700 dark:text-indigo-300">قائمة تحدي الأروقة المرحة (وضع التخمين) 🎮</h3>
+                        <p class="text-xs text-zinc-600 dark:text-zinc-300 mt-0.5">وضع تفاعلي فريد: اكتب جملتك السرية، اسحب المفتاح بالماوس وضعه في القفل لبدء التحدي!</p>
+                    </div>
+                </div>
+
+                <!-- اختيار مستوى الصعوبة (مستوى سهل افتراضياً) -->
+                <div class="flex items-center gap-2 bg-studio-bg/90 border border-studio-border p-1.5 rounded-2xl self-start sm:self-auto shrink-0 shadow-inner">
+                    <span class="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 px-2">المستوى:</span>
+                    <button id="diffEasyBtn" onclick="setDifficulty('easy')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-emerald-500 text-zinc-950 shadow">
+                        سهل 🌟
+                    </button>
+                    <button id="diffMediumBtn" onclick="setDifficulty('medium')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
+                        متوسط
+                    </button>
+                    <button id="diffHardBtn" onclick="setDifficulty('hard')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
+                        صعب
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- صندوق التنبيهات والرسائل (بديل عصري لـ alert) -->
+        <div id="alertBox" class="hidden rounded-2xl p-4 border transition-all duration-300 flex items-start gap-3">
+            <i id="alertIcon" data-lucide="alert-circle" class="w-5 h-5 shrink-0 mt-0.5"></i>
+            <div class="flex-grow text-sm leading-relaxed" id="alertMessage"></div>
+            <button onclick="hideAlert()" class="text-zinc-400 hover:text-white p-1 rounded-lg transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- القسم الأول: إدخال الصوت (تسجيل مباشر أو رفع ملف) -->
+        <section class="bg-studio-card border border-studio-border rounded-3xl p-6 sm:p-8 studio-glow relative overflow-hidden transition-colors duration-300">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                        <i data-lucide="mic" class="w-5 h-5 text-studio-accent"></i>
+                        <span>1. التقاط أو استيراد الصوت</span>
+                    </h2>
+                    <p id="captureSubtitle" class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">سجّل صوتك مباشرة عبر الميكروفون أو اختر ملفاً صوتياً من جهازك</p>
+                </div>
+
+                <!-- مؤقت التسجيل الحي + مؤشر التعرف الصوتي -->
+                <div class="flex items-center gap-2 self-start sm:self-auto">
+                    <div id="speechBadge" class="hidden items-center gap-1.5 bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 px-3 py-2 rounded-2xl text-xs font-bold">
+                        <i data-lucide="ear" class="w-3.5 h-3.5 animate-pulse"></i>
+                        <span id="speechBadgeText">التعرف الصوتي نشط</span>
+                    </div>
+                    <div class="flex items-center gap-2 bg-studio-bg border border-studio-border px-4 py-2 rounded-2xl">
+                        <span id="recIndicator" class="w-2.5 h-2.5 rounded-full bg-zinc-400 dark:bg-zinc-600 transition-colors"></span>
+                        <span id="recordTimer" class="font-mono text-lg font-bold tracking-wider text-zinc-800 dark:text-zinc-300" dir="ltr">00:00.0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- شاشة كراش 343 لطلب إذن الميكروفون (تظهر عند رفض الصلاحية) -->
+            <div id="micCrash343Modal" class="hidden absolute inset-0 bg-studio-card/95 backdrop-blur-md z-20 flex flex-col items-center justify-center p-6 text-center animate-pop-in">
+                <div class="w-16 h-16 rounded-3xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-600 dark:text-rose-400 mb-4 shadow-xl shadow-rose-500/10">
+                    <i data-lucide="shield-alert" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-xl font-extrabold text-zinc-900 dark:text-white mb-1">خطأ نظام [كراش 343]</h3>
+                <p class="text-sm text-zinc-600 dark:text-zinc-300 max-w-sm mb-6">رجاء فعل المايك للمتابعة والتسجيل المباشر والتحدي</p>
+                <button onclick="requestMicrophonePermission()" class="py-3.5 px-7 rounded-2xl font-bold text-sm bg-studio-accent hover:bg-studio-accentHover text-white shadow-lg shadow-studio-accent/25 transition-all flex items-center gap-2 active:scale-95">
+                    <i data-lucide="mic" class="w-4 h-4"></i>
+                    <span>تفعيل الميكروفون وإعطاء الإذن</span>
+                </button>
+            </div>
+
+            <!-- شاشة عرض الموجة الحية أثناء التسجيل -->
+            <div class="relative w-full h-32 bg-studio-bg rounded-2xl border border-studio-border overflow-hidden mb-6 flex items-center justify-center">
+                <canvas id="liveCanvas" class="w-full h-full block"></canvas>
+                <div id="livePlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 pointer-events-none gap-2 px-4 text-center">
+                    <i data-lucide="activity" class="w-6 h-6 opacity-50"></i>
+                    <span id="livePlaceholderText" class="text-xs sm:text-sm">اضغط على "بدء التسجيل" لمشاهدة الموجة الصوتية الحية</span>
+                </div>
+            </div>
+
+            <!-- أزرار التحكم بالتسجيل ورفع الملفات -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- زر التسجيل / الإيقاف -->
+                <button id="recordBtn" onclick="toggleRecording()" class="w-full py-4 px-6 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all duration-200 bg-studio-rose hover:bg-rose-600 text-white shadow-lg shadow-rose-500/20 active:scale-[0.98]">
+                    <i id="recordBtnIcon" data-lucide="mic" class="w-5 h-5"></i>
+                    <span id="recordBtnText">بدء التسجيل المباشر</span>
+                </button>
+
+                <!-- زر رفع ملف صوتي -->
+                <label for="audioFileInput" class="w-full py-4 px-6 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all duration-200 bg-studio-surface hover:bg-zinc-300 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-studio-border cursor-pointer active:scale-[0.98]">
+                    <i data-lucide="upload-cloud" class="w-5 h-5 text-studio-cyan"></i>
+                    <span>رفع ملف صوتي (MP3, WAV, OGG)</span>
+                    <input type="file" id="audioFileInput" accept="audio/*" class="hidden" onchange="handleFileUpload(event)">
+                </label>
+            </div>
+        </section>
+
+        <!-- القسم الثاني: استوديو المعالجة والمشغل التفاعلي -->
+        <section id="studioWorkspace" class="bg-studio-card border border-studio-border rounded-3xl p-6 sm:p-8 transition-all duration-500 opacity-50 pointer-events-none">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-5 h-5 text-studio-cyan"></i>
+                        <span>2. المعاينة وعكس الصوت</span>
+                    </h2>
+                    <p id="audioInfoText" class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">بانتظار تسجيل أو رفع ملف صوتي...</p>
+                </div>
+
+                <!-- مفتاح التبديل بين الصوت المعكوس والأصلي (مع حالة القفل في وضع التخمين) -->
+                <div class="inline-flex p-1.5 bg-studio-bg border border-studio-border rounded-2xl self-start sm:self-auto">
+                    <button id="modeReversedBtn" onclick="switchMode('reversed')" class="px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 bg-studio-accent text-white shadow">
+                        <i data-lucide="rewind" class="w-4 h-4"></i>
+                        <span>الصوت المعكوس</span>
+                    </button>
+                    <button id="modeOriginalBtn" onclick="handleOriginalModeClick()" class="px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white relative">
+                        <i id="originalModeIcon" data-lucide="play" class="w-4 h-4"></i>
+                        <span>الصوت الأصلي</span>
+                        <span id="originalLockPill" class="hidden mr-1 px-1.5 py-0.5 text-[10px] rounded-md bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">مقفل</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- الموجة الصوتية التفاعلية ومؤشر التشغيل (Playhead) -->
+            <div class="relative w-full h-40 bg-studio-bg rounded-2xl border border-studio-border overflow-hidden mb-4 cursor-pointer group" id="waveformContainer">
+                <canvas id="waveformCanvas" class="w-full h-full block"></canvas>
+                <!-- شارة توضح الوضع الحالي داخل الموجة -->
+                <div id="modeBadge" class="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-studio-accent/20 text-studio-accent border border-studio-accent/30 backdrop-blur-sm pointer-events-none">
+                    الوضع: معكوس زمنياً
+                </div>
+                <!-- تلميح التفاعل -->
+                <div class="absolute bottom-2 left-3 text-[11px] text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    انقر أو اسحب على الموجة للتنقل في الصوت
+                </div>
+            </div>
+
+            <!-- شريط الوقت -->
+            <div class="flex items-center justify-between text-xs font-mono text-zinc-600 dark:text-zinc-400 mb-6 px-1" dir="ltr">
+                <span id="currentTimeDisplay">00:00.0</span>
+                <span id="totalDurationDisplay">00:00.0</span>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- صندوق تحدي التخمين والقفل (يظهر في وضع التخمين) -->
+            <!-- ========================================== -->
+            <div id="guessChallengeBox" class="hidden mb-6 rounded-3xl border transition-all duration-500 overflow-hidden bg-studio-bg/90 border-indigo-500/30">
+                
+                <!-- الحالة 1: إعداد الجملة السرية وسحب المفتاح المرح -->
+                <div id="secretSetupView" class="hidden p-6 sm:p-8 bg-gradient-to-b from-indigo-500/10 via-purple-500/5 to-transparent">
+                    <div class="flex items-start gap-4 mb-6">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-zinc-950 shadow-lg shadow-amber-500/30 shrink-0 mt-0.5">
+                            <i data-lucide="key" class="w-6 h-6 animate-bounce"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-extrabold text-zinc-900 dark:text-white">تحدي المفتاح السحري والقفل 🗝️</h3>
+                            <p class="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 mt-1">اكتب الجملة السرية أدناه، ثم اسحب المفتاح الذهبي وافلاته في منطقة القفل لتبدأ لعبة التخمين!</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-5">
+                        <!-- حقل كتابة الجملة -->
+                        <div class="relative">
+                            <input type="text" id="manualSecretInput" placeholder="اكتب الكلمة أو الجملة السرية هنا (مثال: ارحب)..." class="w-full bg-studio-card border-2 border-indigo-500/40 focus:border-indigo-500 rounded-2xl px-5 py-4 text-base text-zinc-900 dark:text-white placeholder-zinc-500 outline-none transition-all shadow-inner">
+                        </div>
+
+                        <!-- منطقة السحب والإفلات المرحة (المفتاح والقفل) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-studio-card/85 border border-studio-border p-6 rounded-2xl shadow-inner relative overflow-hidden">
+                            
+                            <!-- مكان المفتاح القابل للسحب -->
+                            <div class="flex flex-col items-center justify-center p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 relative">
+                                <span class="text-xs font-bold text-amber-700 dark:text-amber-300 mb-3">1. اسحب هذا المفتاح بالماوس 🖱️</span>
+                                <div id="draggableKey" draggable="true" ondragstart="handleDragStart(event)" class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-zinc-950 shadow-xl cursor-grab active:cursor-grabbing hover:scale-110 transition-transform">
+                                    <i data-lucide="key-round" class="w-8 h-8"></i>
+                                </div>
+                                <span class="text-[11px] text-zinc-500 mt-2">اسحب وافلت في القفل بجانبك</span>
+                            </div>
+
+                            <!-- منطقة إفلات المفتاح (القفل) -->
+                            <div id="dropZoneLock" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropKey(event)" class="flex flex-col items-center justify-center p-6 rounded-2xl bg-indigo-500/10 border-2 border-dashed border-indigo-500/50 transition-all">
+                                <div id="lockDropIconContainer" class="w-14 h-14 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-inner mb-2 transition-transform">
+                                    <i data-lucide="lock" class="w-7 h-7"></i>
+                                </div>
+                                <h4 class="text-sm font-bold text-indigo-700 dark:text-indigo-300">2. أفلت المفتاح هنا في القفل</h4>
+                                <p class="text-[11px] text-zinc-500 mt-0.5">لفتح بوابات التحدي وبدء الاستماع!</p>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- الحالة 2: القفل نشط - واجهة التخمين الكتابي -->
+                <div id="lockedGuessView" class="hidden p-5 sm:p-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-studio-border/80">
+                        <div class="flex items-center gap-3">
+                            <div id="lockBadgeIcon" class="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-inner">
+                                <i data-lucide="lock" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-base font-extrabold text-zinc-900 dark:text-white">الصوت الأصلي مقفل!</h3>
+                                    <span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">بانتظار التخمين</span>
+                                </div>
+                                <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">استمع للصوت المعكوس جيداً وحاول كتابة الجملة الأصلية لفتح القفل</p>
+                            </div>
+                        </div>
+
+                        <!-- تلميح بعدد الكلمات والحروف -->
+                        <div id="secretHintPill" class="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-studio-surface border border-studio-border text-xs text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                            <i data-lucide="lightbulb" class="w-3.5 h-3.5 text-amber-500 dark:text-amber-400"></i>
+                            <span id="secretHintText">تلميح: كلمة واحدة</span>
+                        </div>
+                    </div>
+
+                    <!-- حقل إدخال التخمين -->
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="relative flex-grow">
+                            <input type="text" id="guessInput" placeholder="اكتب تخمينك لما سمعته هنا..." autocomplete="off" class="w-full bg-studio-surface border border-studio-border focus:border-studio-accent rounded-xl px-4 py-3.5 text-base text-zinc-900 dark:text-white placeholder-zinc-500 outline-none transition-all" onkeydown="if(event.key==='Enter') checkUserGuess()">
+                        </div>
+                        <button onclick="checkUserGuess()" class="px-7 py-3.5 rounded-xl font-bold text-sm bg-gradient-to-l from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-zinc-950 shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-95 shrink-0">
+                            <i data-lucide="unlock" class="w-4 h-4"></i>
+                            <span>تحقق وافتح القفل</span>
+                        </button>
+                    </div>
+
+                    <!-- ========================================== -->
+                    <!-- مساعد التخمين الصوتي (متاح في المستوى السهل فقط - مرتين) -->
+                    <!-- ========================================== -->
+                    <div id="voiceHelperSection" class="mt-5 pt-4 border-t border-studio-border/80">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                                    <i data-lucide="mic-2" class="w-4 h-4"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="text-xs sm:text-sm font-bold text-zinc-800 dark:text-zinc-200">مساعد المستوى السهل: جرّب تنطقها بصوتك وتعكسها!</h4>
+                                        <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">ميزة المستوى السهل</span>
+                                    </div>
+                                    <p class="text-[11px] text-zinc-600 dark:text-zinc-400">سجّل نطقك للكلمة المعكوسة (مثلاً: نطق "بحرا" لتقريب "ارحب") واسمعها معكوسة</p>
+                                </div>
+                            </div>
+
+                            <!-- عداد المحاولات المتبقية (مرتين فقط) -->
+                            <div id="voiceHelperCounterBadge" class="self-start sm:self-auto px-3 py-1 rounded-xl bg-studio-surface border border-studio-border text-xs font-bold text-cyan-700 dark:text-studio-cyan flex items-center gap-1.5 shrink-0">
+                                <i data-lucide="repeat" class="w-3.5 h-3.5"></i>
+                                <span id="voiceHelperRemainingText">المحاولات المتبقية: 2 من 2</span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                            <!-- زر تسجيل محاولة المساعدة الصوتية -->
+                            <button id="helperRecordBtn" onclick="toggleHelperRecording()" class="py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 bg-studio-surface hover:bg-zinc-300 dark:hover:bg-zinc-800 text-cyan-700 dark:text-studio-cyan border border-studio-cyan/30 transition-all active:scale-95">
+                                <i id="helperRecordIcon" data-lucide="mic" class="w-4 h-4"></i>
+                                <span id="helperRecordText">سجّل محاولتك الصوتية (المحاولة 1)</span>
+                            </button>
+
+                            <!-- زر الاستماع لصوتك معكوساً (يظهر بعد التسجيل) -->
+                            <button id="helperPlayReversedBtn" onclick="playHelperReversedAudio()" class="hidden py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 bg-studio-cyan/15 hover:bg-studio-cyan/25 text-cyan-700 dark:text-studio-cyan border border-studio-cyan/40 transition-all active:scale-95">
+                                <i id="helperPlayIcon" data-lucide="volume-2" class="w-4 h-4"></i>
+                                <span id="helperPlayText">اسمع صوتك معكوساً</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- تنبيه إغلاق المساعد الصوتي في المستويات المتوسطة والصعبة -->
+                    <div id="voiceHelperLockedNote" class="hidden mt-4 pt-3 border-t border-studio-border/60 flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                        <i data-lucide="shield-alert" class="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0"></i>
+                        <span>مساعد تسجيل وعكس صوتك متاح في <strong>المستوى السهل</strong> فقط. اعتمد على سمعك الآن!</span>
+                    </div>
+
+                    <!-- شريط نتيجة المحاولة ونسبة التطابق -->
+                    <div id="guessFeedbackBox" class="hidden mt-4 p-3.5 rounded-xl border text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <i id="guessFeedbackIcon" data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+                            <span id="guessFeedbackText" class="font-medium"></span>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-zinc-600 dark:text-zinc-400">نسبة التطابق:</span>
+                            <span id="similarityScoreBadge" class="font-mono font-bold px-2.5 py-0.5 rounded-lg bg-studio-bg border border-studio-border">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- الحالة 3: تم فتح القفل بنجاح (الاحتفال وإظهار الجملة) -->
+                <div id="unlockedSuccessView" class="hidden p-5 sm:p-6 bg-gradient-to-l from-emerald-500/15 via-emerald-500/5 to-transparent animate-pop-in">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-lg shadow-emerald-500/10">
+                                <i data-lucide="unlock" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-base font-extrabold text-emerald-700 dark:text-emerald-300">أحسنت! تم فتح القفل بنجاح 🎉</h3>
+                                    <span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">تخمين صحيح</span>
+                                </div>
+                                <p class="text-xs text-zinc-700 dark:text-zinc-300 mt-1">الجملة السرية كانت: <span id="revealedSecretText" class="font-bold text-zinc-900 dark:text-white bg-studio-surface px-2.5 py-0.5 rounded-lg border border-studio-border mr-1"></span></p>
+                            </div>
+                        </div>
+
+                        <button onclick="switchMode('original'); startPlayback();" class="px-5 py-3 rounded-xl font-bold text-xs sm:text-sm bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95">
+                            <i data-lucide="volume-2" class="w-4 h-4"></i>
+                            <span>استمع للصوت الأصلي الآن</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- أزرار التشغيل والتنزيل -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-studio-border">
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <!-- زر تشغيل / إيقاف مؤقت -->
+                    <button id="playPauseBtn" onclick="togglePlayback()" class="flex-grow sm:flex-grow-0 py-3.5 px-7 rounded-2xl font-bold text-base flex items-center justify-center gap-2.5 bg-studio-accent hover:bg-studio-accentHover text-white shadow-lg shadow-studio-accent/25 transition-all active:scale-95">
+                        <i id="playPauseIcon" data-lucide="play" class="w-5 h-5 fill-current"></i>
+                        <span id="playPauseText">تشغيل</span>
+                    </button>
+
+                    <!-- زر إيقاف وإعادة للبداية -->
+                    <button onclick="stopPlayback()" title="إيقاف وإعادة للبداية" class="p-3.5 rounded-2xl bg-studio-surface hover:bg-zinc-300 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-300 border border-studio-border transition-all active:scale-95">
+                        <i data-lucide="square" class="w-5 h-5 fill-current"></i>
+                    </button>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                    <!-- زر نشر التحدي أونلاين -->
+                    <button id="publishOnlineBtn" onclick="openPublishOnlineModal()" class="w-full sm:w-auto py-3.5 px-5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 bg-gradient-to-l from-studio-cyan to-studio-accent hover:opacity-95 text-white shadow-lg shadow-cyan-500/20 transition-all active:scale-95">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        <span>نشر تحدي أونلاين</span>
+                    </button>
+
+                    <!-- زر تنزيل الملف المعكوس بصيغة WAV -->
+                    <button id="downloadBtn" onclick="downloadReversedWav()" class="w-full sm:w-auto py-3.5 px-6 rounded-2xl font-bold text-base flex items-center justify-center gap-2.5 bg-studio-emerald hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 transition-all active:scale-95">
+                        <i data-lucide="download" class="w-5 h-5"></i>
+                        <span>تنزيل WAV</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- نافذة نشر تحدي أونلاين (Publish Modal) -->
+    <div id="publishOnlineModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-pop-in">
+        <div class="bg-studio-card border border-studio-border rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closePublishOnlineModal()" class="absolute top-5 left-5 p-2 rounded-xl bg-studio-surface hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-300">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-11 h-11 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-studio-cyan">
+                    <i data-lucide="radio" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-extrabold text-zinc-900 dark:text-white">نشر مقطعك كتحدي أونلاين</h3>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">سيستمع اللاعبون للصوت المعكوس ويحاولون تخمين الكلمة!</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">الكلمة أو الجملة الصحيحة (الإجابة السرية):</label>
+                    <input type="text" id="publishSecretInput" placeholder="اكتب ما قلته في المقطع..." class="w-full bg-studio-bg border border-studio-border focus:border-studio-cyan rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">تلميح اختياري للاعبين:</label>
+                    <input type="text" id="publishHintInput" placeholder="مثال: كلمة ترحيب سعودية" class="w-full bg-studio-bg border border-studio-border focus:border-studio-cyan rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none">
+                </div>
+
+                <button id="confirmPublishBtn" onclick="publishChallengeToCloud()" class="w-full py-3.5 px-5 rounded-2xl font-bold text-sm bg-gradient-to-l from-studio-cyan to-studio-accent text-white shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    <span>نشر التحدي الآن للجميع</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- التذييل (Footer) -->
+    <footer class="border-t border-studio-border/60 py-6 text-center text-xs text-zinc-500">
+        <p>تتم جميع عمليات معالجة الصوت وعكسه محلياً داخل متصفحك بخصوصية تامة دون رفع أي بيانات.</p>
+    </footer>
+
+    <!-- السكربت البرمجي لمعالجة الصوت والرسم -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, GoogleAuthProvider, linkWithPopup, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // تهيئة Firebase للمزامنة الفورية والأونلاين والحسابات
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'audio-reverser-default';
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+
+        // قائمة الأفاتارات المتاحة للاختيار
+        const AVATAR_OPTIONS = ['🎧', '🎙️', '🦊', '🚀', '👾', '🦁', '🐼', '⚡', '🔥', '👑', '🤖', '💎'];
+
+        // بيانات الملف الشخصي الحالية
+        let userProfile = {
+            displayName: 'لاعب زائر',
+            username: 'guest_' + Math.floor(1000 + Math.random() * 9000),
+            avatar: '🎧',
+            isGoogleLinked: false,
+            isBanned: false,
+            email: '',
+            bgPreset: 'meteors',
+            customBgUrl: ''
+        };
+
+        let onlineChallenges = [];
+        let allRooms = [];
+        let currentRoomId = null;
+        let newRoomType = 'public';
+        let activeOnlineAudio = null;
+        let hasShownDiscordInviteThisSession = false;
+
+        // دوال التحكم بنافذة دعوة الديسكورد
+        window.openDiscordInviteModal = function() {
+            const modal = document.getElementById('discordInviteModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                lucide.createIcons();
+            }
+        };
+
+        window.closeDiscordInviteModal = function() {
+            const modal = document.getElementById('discordInviteModal');
+            if (modal) modal.classList.add('hidden');
+        };
+
+        window.copyDiscordInviteLink = function() {
+            const inviteUrl = 'https://discord.gg/63EQnajtwX';
+            const tempInput = document.createElement('input');
+            tempInput.value = inviteUrl;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showAlert('تم نسخ رابط دعوة سيرفر الديسكورد بنجاح!', 'success');
+        };
+
+        async function initOnlineSystem() {
+            // تطبيق الخلفية الافتراضية المستوحاة من الصور فوراً
+            applyPresetBackground('meteors', false);
+
+            try {
+                if (typeof __firebase_config === 'undefined') {
+                    renderAvatarPicker();
+                    updateProfileHeaderUI();
+                    renderOnlineChallengesList();
+                    return;
+                }
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // المصادقة أولاً قبل أي استعلام (RULE 3)
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                currentUser = auth.currentUser;
+                await loadUserProfileFromCloud();
+                subscribeToOnlineChallenges();
+                subscribeToOnlineRooms();
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUser = user;
+                        const googleProviderData = user.providerData?.find(p => p.providerId === 'google.com');
+                        if (googleProviderData && !userProfile.isBanned) {
+                            userProfile.isGoogleLinked = true;
+                            userProfile.email = googleProviderData.email || user.email || '';
+                            if (!hasShownDiscordInviteThisSession) {
+                                hasShownDiscordInviteThisSession = true;
+                                openDiscordInviteModal();
+                            }
+                        }
+                        updateProfileHeaderUI();
+                    }
+                });
+            } catch (err) {
+                console.warn('Online initialization fallback:', err);
+            }
+            renderAvatarPicker();
+            updateProfileHeaderUI();
+        }
+
+        async function loadUserProfileFromCloud() {
+            if (!db || !currentUser) return;
+            try {
+                const profileRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'main');
+                const snap = await getDoc(profileRef);
+                if (snap.exists()) {
+                    userProfile = { ...userProfile, ...snap.data() };
+                } else {
+                    await setDoc(profileRef, userProfile);
+                }
+
+                // التحقق من سجل الحظر الدائم
+                if (userProfile.isBanned) {
+                    enforcePermanentOfflineBan();
+                } else if (userProfile.customBgUrl && userProfile.isGoogleLinked) {
+                    applyCustomImageBackground(userProfile.customBgUrl);
+                } else if (userProfile.bgPreset) {
+                    applyPresetBackground(userProfile.bgPreset, false);
+                }
+            } catch (e) {
+                console.warn('Profile fetch error:', e);
+            }
+        }
+
+        // تنفيذ الحظر الدائم وتحويل الحساب إلى وضع Offline فقط
+        function enforcePermanentOfflineBan() {
+            userProfile.isBanned = true;
+            userProfile.isGoogleLinked = false;
+            userProfile.displayName = 'حساب محظور (Offline)';
+            userProfile.username = 'banned_offline';
+            userProfile.customBgUrl = '';
+            applyPresetBackground('default', false);
+            if (appMode === 'online') {
+                setAppMode('normal');
+            }
+            updateProfileHeaderUI();
+        }
+
+        function updateProfileHeaderUI() {
+            const avatarEl = document.getElementById('headerAvatarContainer');
+            const nameEl = document.getElementById('headerDisplayName');
+            const userEl = document.getElementById('headerUsername');
+
+            if (avatarEl) {
+                if (userProfile.avatar && userProfile.avatar.startsWith('http')) {
+                    avatarEl.innerHTML = `<img src="${userProfile.avatar}" alt="avatar" class="w-full h-full object-cover">`;
+                } else {
+                    avatarEl.textContent = userProfile.avatar || '🎧';
+                }
+            }
+            if (nameEl) nameEl.textContent = userProfile.displayName || 'لاعب زائر';
+            if (userEl) userEl.textContent = '@' + (userProfile.username || 'guest');
+
+            // تحديث حالة القفل والحظر داخل نافذة الملف الشخصي والخلفيات
+            const signedOutView = document.getElementById('googleSignedOutView');
+            const signedInView = document.getElementById('googleSignedInView');
+            const bannedBanner = document.getElementById('bannedAccountBanner');
+            const googleLoginBtn = document.getElementById('googleLoginBtn');
+            const lockedOverlay = document.getElementById('profileLockedOverlay');
+            const nameInput = document.getElementById('profileDisplayNameInput');
+            const userInput = document.getElementById('profileUsernameInput');
+            const saveBtn = document.getElementById('saveProfileBtn');
+            const bgGuestNotice = document.getElementById('bgUploadGuestNotice');
+            const bgSignedInArea = document.getElementById('bgUploadSignedInArea');
+            const emailEl = document.getElementById('googleUserEmail');
+
+            const canEditAccount = userProfile.isGoogleLinked && !userProfile.isBanned;
+
+            if (bannedBanner) {
+                bannedBanner.classList.toggle('hidden', !userProfile.isBanned);
+            }
+            if (googleLoginBtn) {
+                googleLoginBtn.disabled = userProfile.isBanned;
+                if (userProfile.isBanned) {
+                    googleLoginBtn.classList.add('opacity-40', 'cursor-not-allowed');
+                }
+            }
+
+            if (signedOutView && signedInView) {
+                if (canEditAccount) {
+                    signedOutView.classList.add('hidden');
+                    signedInView.classList.remove('hidden');
+                    if (emailEl) emailEl.textContent = userProfile.email || 'مرتبط بحساب Google';
+                } else {
+                    signedOutView.classList.remove('hidden');
+                    signedInView.classList.add('hidden');
+                }
+            }
+
+            if (lockedOverlay) lockedOverlay.classList.toggle('hidden', canEditAccount);
+            if (nameInput) nameInput.disabled = !canEditAccount;
+            if (userInput) userInput.disabled = !canEditAccount;
+            if (saveBtn) saveBtn.disabled = !canEditAccount;
+
+            if (bgGuestNotice && bgSignedInArea) {
+                bgGuestNotice.classList.toggle('hidden', canEditAccount);
+                bgSignedInArea.classList.toggle('hidden', !canEditAccount);
+            }
+        }
+
+        function renderAvatarPicker() {
+            const grid = document.getElementById('avatarPickerGrid');
+            if (!grid) return;
+            grid.innerHTML = AVATAR_OPTIONS.map(av => {
+                const isSelected = userProfile.avatar === av;
+                return `<button type="button" onclick="selectAvatar('${av}')" class="h-11 rounded-xl text-xl flex items-center justify-center border transition-all ${isSelected ? 'bg-studio-accent/20 border-studio-accent scale-105 shadow' : 'bg-studio-bg border-studio-border hover:bg-studio-surface'}">${av}</button>`;
+            }).join('');
+        }
+
+        window.selectAvatar = function(av) {
+            if (!userProfile.isGoogleLinked || userProfile.isBanned) {
+                showAlert('يجب تسجيل الدخول بحساب Google لتغيير الأفاتار والاسم.', 'info');
+                return;
+            }
+            userProfile.avatar = av;
+            renderAvatarPicker();
+        };
+
+        window.openProfileModal = function() {
+            document.getElementById('profileDisplayNameInput').value = userProfile.displayName;
+            document.getElementById('profileUsernameInput').value = userProfile.username;
+            renderAvatarPicker();
+            updateProfileHeaderUI();
+            document.getElementById('profileModal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.closeProfileModal = function() {
+            document.getElementById('profileModal').classList.add('hidden');
+        };
+
+        window.saveUserProfile = async function() {
+            if (!userProfile.isGoogleLinked || userProfile.isBanned) {
+                showAlert('لا يمكنك تعديل الاسم أو اليوزر إلا بعد تسجيل الدخول بحساب نشط!', 'error');
+                return;
+            }
+
+            const nameVal = document.getElementById('profileDisplayNameInput').value.trim();
+            let rawUser = document.getElementById('profileUsernameInput').value.trim().toLowerCase();
+            rawUser = rawUser.replace(/[^a-z0-9_]/g, '');
+
+            if (!nameVal) {
+                showAlert('يرجى إدخال الاسم المعروض (Display Name).', 'info');
+                return;
+            }
+            if (!rawUser || rawUser.length < 3) {
+                showAlert('اسم المستخدم (Username) يجب أن يتكون من 3 أحرف إنجليزية أو أرقام على الأقل.', 'info');
+                return;
+            }
+
+            userProfile.displayName = nameVal;
+            userProfile.username = rawUser;
+            updateProfileHeaderUI();
+            closeProfileModal();
+            showAlert('تم حفظ ملفك الشخصي وهويتك بنجاح!', 'success');
+
+            if (db && currentUser) {
+                try {
+                    const profileRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'main');
+                    await setDoc(profileRef, userProfile, { merge: true });
+                } catch (e) {
+                    console.warn('Save profile error:', e);
+                }
+            }
+        };
+
+        // ==========================================
+        // نظام الخلفيات وفحص محتوى 18+ بالذكاء الاصطناعي
+        // ==========================================
+        window.openBackgroundModal = function() {
+            updateProfileHeaderUI();
+            document.getElementById('backgroundModal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.closeBackgroundModal = function() {
+            document.getElementById('backgroundModal').classList.add('hidden');
+        };
+
+        window.applyPresetBackground = function(preset, saveToCloud = true) {
+            document.body.classList.remove('bg-preset-meteors', 'bg-preset-eye', 'bg-custom-image');
+            document.body.style.backgroundImage = '';
+
+            if (preset === 'meteors') {
+                document.body.classList.add('bg-preset-meteors');
+            } else if (preset === 'eye') {
+                document.body.classList.add('bg-preset-eye');
+            }
+
+            userProfile.bgPreset = preset;
+            userProfile.customBgUrl = '';
+
+            if (saveToCloud && db && currentUser && userProfile.isGoogleLinked && !userProfile.isBanned) {
+                const profileRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'main');
+                setDoc(profileRef, { bgPreset: preset, customBgUrl: '' }, { merge: true }).catch(() => {});
+            }
+        };
+
+        function applyCustomImageBackground(dataUrl) {
+            document.body.classList.remove('bg-preset-meteors', 'bg-preset-eye');
+            document.body.classList.add('bg-custom-image');
+            document.body.style.backgroundImage = `linear-gradient(rgba(9, 9, 11, 0.72), rgba(9, 9, 11, 0.82)), url("${dataUrl}")`;
+        }
+
+        // فحص الصورة عبر Gemini Vision API للكشف عن محتوى 18+
+        async function moderateImageForNSFW(base64Data, mimeType) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+            const prompt = "Analyze this image strictly for safety. Does it contain 18+, NSFW, nudity, sexually explicit, or adult suggestive content? Reply ONLY with a JSON object: {\"is18Plus\": true/false, \"reason\": \"short reason\"}.";
+
+            const payload = {
+                contents: [{
+                    role: "user",
+                    parts: [
+                        { text: prompt },
+                        { inlineData: { mimeType: mimeType || "image/png", data: base64Data } }
+                    ]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json"
+                }
+            };
+
+            const res = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{"is18Plus": false}';
+            return JSON.parse(rawText);
+        }
+
+        window.handleCustomBackgroundUpload = async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!userProfile.isGoogleLinked || userProfile.isBanned) {
+                showAlert('رفع الخلفيات المخصصة متاح للمسجلين بحساب نشط فقط.', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            const labelText = document.getElementById('customBgUploadText');
+            labelText.textContent = 'جاري فحص الصورة أمنياً (18+)...';
+
+            try {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const dataUrl = e.target.result;
+                    const base64Data = dataUrl.split(',')[1];
+
+                    try {
+                        const checkResult = await moderateImageForNSFW(base64Data, file.type);
+                        if (checkResult && checkResult.is18Plus === true) {
+                            // حظر الحساب نهائياً وتحويله إلى Offline فقط
+                            enforcePermanentOfflineBan();
+                            closeBackgroundModal();
+                            if (db && currentUser) {
+                                const profileRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'main');
+                                await setDoc(profileRef, { isBanned: true, isGoogleLinked: false, customBgUrl: '' }, { merge: true });
+                            }
+                            if (auth) {
+                                try { await signOut(auth); } catch (_) {}
+                            }
+                            showAlert('⛔ تم رصد صورة مخالفة (18+)! تم إغلاق حسابك نهائياً وتحويلك لوضع Offline فقط ولن تتمكن من تسجيل الدخول مجدداً.', 'error');
+                            return;
+                        }
+                    } catch (modErr) {
+                        console.warn('Moderation check fallback:', modErr);
+                    }
+
+                    // الصورة آمنة -> تطبيقها كخلفية
+                    applyCustomImageBackground(dataUrl);
+                    userProfile.customBgUrl = dataUrl;
+                    closeBackgroundModal();
+                    showAlert('تم فحص الصورة بنجاح وتعيينها كخلفية للاستوديو!', 'success');
+
+                    if (db && currentUser && dataUrl.length < 800000) {
+                        const profileRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'main');
+                        await setDoc(profileRef, { customBgUrl: dataUrl, bgPreset: 'custom' }, { merge: true });
+                    }
+                };
+                reader.readAsDataURL(file);
+            } finally {
+                labelText.textContent = 'اختر صورة لرفعها وفحصها';
+                event.target.value = '';
+            }
+        };
+
+        // تسجيل الدخول أو ربط الحساب عبر Google (إلزامي للأونلاين وتعديل الحساب)
+        window.signInWithGoogleHandler = async function() {
+            if (userProfile.isBanned) {
+                showAlert('⛔ هذا الحساب محظور نهائياً بسبب مخالفة سياسة المحتوى (18+) ولا يمكن تسجيل الدخول.', 'error');
+                return;
+            }
+            if (!auth) {
+                showAlert('خدمة Google غير مهيأة في هذه البيئة المحلية.', 'info');
+                return;
+            }
+            try {
+                const provider = new GoogleAuthProvider();
+                let result;
+                if (auth.currentUser && auth.currentUser.isAnonymous) {
+                    try {
+                        result = await linkWithPopup(auth.currentUser, provider);
+                    } catch (linkErr) {
+                        result = await signInWithPopup(auth, provider);
+                    }
+                } else {
+                    result = await signInWithPopup(auth, provider);
+                }
+
+                const gUser = result.user;
+                currentUser = gUser;
+                await loadUserProfileFromCloud();
+
+                if (userProfile.isBanned) {
+                    await signOut(auth);
+                    enforcePermanentOfflineBan();
+                    showAlert('⛔ هذا الحساب محظور نهائياً ولا يمكن استخدامه.', 'error');
+                    return;
+                }
+
+                userProfile.isGoogleLinked = true;
+                userProfile.email = gUser.email || '';
+                if (gUser.displayName && userProfile.displayName === 'لاعب زائر') {
+                    userProfile.displayName = gUser.displayName;
+                    document.getElementById('profileDisplayNameInput').value = gUser.displayName;
+                }
+                if (gUser.photoURL) {
+                    userProfile.avatar = gUser.photoURL;
+                }
+
+                updateProfileHeaderUI();
+                closeProfileModal();
+                showAlert('تم تسجيل الدخول بحساب Google بنجاح! يمكنك الآن تعديل اسمك ودخول غرف الأونلاين.', 'success');
+
+                // إظهار نافذة دعوة سيرفر الديسكورد فور تسجيل الدخول
+                hasShownDiscordInviteThisSession = true;
+                openDiscordInviteModal();
+
+                if (db && currentUser) {
+                    const profileRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'main');
+                    await setDoc(profileRef, userProfile, { merge: true });
+                }
+            } catch (err) {
+                console.warn('Google sign-in info:', err);
+                showAlert('تعذر إكمال نافذة تسجيل دخول Google. يرجى السماح بالنوافذ المنبثقة والمحاولة مجدداً.', 'info');
+            }
+        };
+
+        window.signOutGoogleHandler = async function() {
+            if (!auth) return;
+            try {
+                await signOut(auth);
+                await signInAnonymously(auth);
+                currentUser = auth.currentUser;
+                userProfile.isGoogleLinked = false;
+                userProfile.email = '';
+                userProfile.displayName = 'لاعب زائر';
+                userProfile.username = 'guest_' + Math.floor(1000 + Math.random() * 9000);
+                userProfile.avatar = '🎧';
+                if (appMode === 'online') setAppMode('normal');
+                updateProfileHeaderUI();
+                renderAvatarPicker();
+                showAlert('تم تسجيل الخروج. تم قفل الأونلاين وتعديل الهوية.', 'info');
+            } catch (e) {
+                console.warn('Sign out error:', e);
+            }
+        };
+
+        // ==========================================
+        // نظام الغرف العامة والخاصة ونظام موافقة الـ Host
+        // ==========================================
+        function subscribeToOnlineRooms() {
+            if (!db || !currentUser) return;
+            const roomsCol = collection(db, 'artifacts', appId, 'public', 'data', 'online_rooms');
+            onSnapshot(roomsCol, (snapshot) => {
+                const rooms = [];
+                snapshot.forEach(docSnap => {
+                    rooms.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                rooms.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                allRooms = rooms;
+                renderOnlineRoomsUI();
+                renderOnlineChallengesList();
+            }, (err) => console.error('Rooms snapshot error:', err));
+        }
+
+        window.openCreateRoomModal = function() {
+            if (!userProfile.isGoogleLinked || userProfile.isBanned) {
+                showAlert('يجب تسجيل الدخول بحساب Google لإنشاء غرفة أونلاين.', 'error');
+                openProfileModal();
+                return;
+            }
+            document.getElementById('newRoomNameInput').value = '';
+            selectNewRoomType('public');
+            document.getElementById('createRoomModal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.closeCreateRoomModal = function() {
+            document.getElementById('createRoomModal').classList.add('hidden');
+        };
+
+        window.selectNewRoomType = function(type) {
+            newRoomType = type;
+            const pubBtn = document.getElementById('roomTypePublicBtn');
+            const privBtn = document.getElementById('roomTypePrivateBtn');
+            if (type === 'public') {
+                pubBtn.className = 'py-2.5 px-3 rounded-xl border border-studio-accent bg-studio-accent/15 text-studio-accent font-bold text-xs flex items-center justify-center gap-1.5';
+                privBtn.className = 'py-2.5 px-3 rounded-xl border border-studio-border bg-studio-bg text-zinc-500 font-bold text-xs flex items-center justify-center gap-1.5';
+            } else {
+                privBtn.className = 'py-2.5 px-3 rounded-xl border border-amber-500 bg-amber-500/15 text-amber-500 font-bold text-xs flex items-center justify-center gap-1.5';
+                pubBtn.className = 'py-2.5 px-3 rounded-xl border border-studio-border bg-studio-bg text-zinc-500 font-bold text-xs flex items-center justify-center gap-1.5';
+            }
+        };
+
+        window.createOnlineRoom = async function() {
+            const roomName = document.getElementById('newRoomNameInput').value.trim();
+            if (!roomName) {
+                showAlert('يرجى كتابة اسم للغرفة أولاً.', 'info');
+                return;
+            }
+            if (!db || !currentUser) return;
+
+            const roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
+            try {
+                const roomsCol = collection(db, 'artifacts', appId, 'public', 'data', 'online_rooms');
+                const docRef = await addDoc(roomsCol, {
+                    name: roomName,
+                    type: newRoomType,
+                    code: roomCode,
+                    hostUid: currentUser.uid,
+                    hostName: userProfile.displayName,
+                    hostUsername: userProfile.username,
+                    approvedMembers: [{
+                        uid: currentUser.uid,
+                        displayName: userProfile.displayName,
+                        username: userProfile.username,
+                        avatar: userProfile.avatar
+                    }],
+                    pendingRequests: [],
+                    createdAt: Date.now()
+                });
+
+                currentRoomId = docRef.id;
+                closeCreateRoomModal();
+                showAlert(`تم إنشاء الغرفة "${roomName}"! أنت الآن الـ Host.`, 'success');
+            } catch (e) {
+                console.error('Create room error:', e);
+                showAlert('تعذر إنشاء الغرفة حالياً.', 'error');
+            }
+        };
+
+        window.openJoinPrivateRoomModal = function() {
+            document.getElementById('privateRoomCodeInput').value = '';
+            document.getElementById('joinPrivateRoomModal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.closeJoinPrivateRoomModal = function() {
+            document.getElementById('joinPrivateRoomModal').classList.add('hidden');
+        };
+
+        window.requestJoinRoom = async function(roomId) {
+            if (!db || !currentUser || !userProfile.isGoogleLinked || userProfile.isBanned) {
+                showAlert('يجب تسجيل الدخول بحساب Google لإرسال طلب دخول للغرفة.', 'error');
+                return;
+            }
+
+            const room = allRooms.find(r => r.id === roomId);
+            if (!room) return;
+
+            // إذا كان العضو مقبولاً مسبقاً يدخل فوراً
+            const isAlreadyMember = (room.approvedMembers || []).some(m => m.uid === currentUser.uid);
+            if (isAlreadyMember) {
+                currentRoomId = room.id;
+                renderOnlineRoomsUI();
+                renderOnlineChallengesList();
+                return;
+            }
+
+            const isPending = (room.pendingRequests || []).some(r => r.uid === currentUser.uid);
+            if (isPending) {
+                currentRoomId = room.id;
+                showAlert('طلب دخولك قيد الانتظار بالفعل عند الـ Host...', 'info');
+                return;
+            }
+
+            try {
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'online_rooms', roomId);
+                await updateDoc(roomRef, {
+                    pendingRequests: arrayUnion({
+                        uid: currentUser.uid,
+                        displayName: userProfile.displayName,
+                        username: userProfile.username,
+                        avatar: userProfile.avatar
+                    })
+                });
+                currentRoomId = roomId;
+                showAlert('تم إرسال طلب دخولك إلى الـ Host! بانتظار موافقته...', 'info');
+            } catch (e) {
+                console.error('Join request error:', e);
+            }
+        };
+
+        window.requestJoinPrivateRoomByCode = async function() {
+            const code = document.getElementById('privateRoomCodeInput').value.trim().toUpperCase();
+            if (!code) {
+                showAlert('أدخل رمز الغرفة الخاصة أولاً.', 'info');
+                return;
+            }
+            const targetRoom = allRooms.find(r => r.code === code);
+            if (!targetRoom) {
+                showAlert('لم يتم العثور على غرفة بهذا الرمز!', 'error');
+                return;
+            }
+            closeJoinPrivateRoomModal();
+            await requestJoinRoom(targetRoom.id);
+        };
+
+        // موافقة الـ Host على دخول شخص للغرفة
+        window.approveJoinRequest = async function(roomId, reqUid) {
+            const room = allRooms.find(r => r.id === roomId);
+            if (!room || !db) return;
+            const reqObj = (room.pendingRequests || []).find(r => r.uid === reqUid);
+            if (!reqObj) return;
+
+            try {
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'online_rooms', roomId);
+                await updateDoc(roomRef, {
+                    pendingRequests: arrayRemove(reqObj),
+                    approvedMembers: arrayUnion(reqObj)
+                });
+                showAlert(`تم قبول دخول ${reqObj.displayName} إلى الغرفة!`, 'success');
+            } catch (e) {
+                console.error('Approve error:', e);
+            }
+        };
+
+        // رفض الـ Host لدخول شخص للغرفة
+        window.rejectJoinRequest = async function(roomId, reqUid) {
+            const room = allRooms.find(r => r.id === roomId);
+            if (!room || !db) return;
+            const reqObj = (room.pendingRequests || []).find(r => r.uid === reqUid);
+            if (!reqObj) return;
+
+            try {
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'online_rooms', roomId);
+                await updateDoc(roomRef, {
+                    pendingRequests: arrayRemove(reqObj)
+                });
+                showAlert(`تم رفض طلب دخول ${reqObj.displayName}.`, 'info');
+            } catch (e) {
+                console.error('Reject error:', e);
+            }
+        };
+
+        window.leaveCurrentRoom = function() {
+            currentRoomId = null;
+            renderOnlineRoomsUI();
+            renderOnlineChallengesList();
+        };
+
+        function renderOnlineRoomsUI() {
+            const activePanel = document.getElementById('activeRoomPanel');
+            const browserPanel = document.getElementById('publicRoomsBrowser');
+            const publicListEl = document.getElementById('publicRoomsList');
+            const publicCountEl = document.getElementById('publicRoomsCount');
+
+            const publicRooms = allRooms.filter(r => r.type === 'public');
+            if (publicCountEl) publicCountEl.textContent = publicRooms.length;
+
+            // عرض قائمة الغرف العامة
+            if (publicListEl) {
+                if (publicRooms.length === 0) {
+                    publicListEl.innerHTML = `<div class="col-span-full text-center py-6 text-xs text-zinc-500">لا توجد غرف عامة حالياً. أنشئ غرفتك الأولى!</div>`;
+                } else {
+                    publicListEl.innerHTML = publicRooms.map(room => {
+                        const membersCount = (room.approvedMembers || []).length;
+                        return `
+                            <div class="p-4 rounded-2xl bg-studio-bg border border-studio-border flex items-center justify-between gap-3">
+                                <div>
+                                    <div class="text-sm font-extrabold text-zinc-900 dark:text-white">${escapeHtml(room.name)}</div>
+                                    <div class="text-[11px] text-zinc-500 mt-0.5">الهوست: @${escapeHtml(room.hostUsername)} • الأعضاء: ${membersCount}</div>
+                                </div>
+                                <button onclick="requestJoinRoom('${room.id}')" class="px-3.5 py-2 rounded-xl bg-studio-cyan hover:opacity-90 text-zinc-950 font-bold text-xs shrink-0 transition-all">
+                                    طلب دخول
+                                </button>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            // التحقق من حالة الغرفة المختارة حالياً
+            const currentRoom = allRooms.find(r => r.id === currentRoomId);
+            if (!currentRoom || !activePanel) {
+                if (activePanel) activePanel.classList.add('hidden');
+                if (browserPanel) browserPanel.classList.remove('hidden');
+                return;
+            }
+
+            const isHost = currentUser && currentRoom.hostUid === currentUser.uid;
+            const isApproved = currentUser && (currentRoom.approvedMembers || []).some(m => m.uid === currentUser.uid);
+            const isPending = currentUser && (currentRoom.pendingRequests || []).some(r => r.uid === currentUser.uid);
+
+            if (!isHost && !isApproved) {
+                if (isPending) {
+                    activePanel.classList.remove('hidden');
+                    activePanel.classList.add('flex');
+                    browserPanel.classList.add('hidden');
+                    document.getElementById('activeRoomTitle').textContent = currentRoom.name;
+                    document.getElementById('activeRoomHostName').textContent = '@' + currentRoom.hostUsername;
+                    document.getElementById('hostJoinRequestsBox').classList.add('hidden');
+                    document.getElementById('activeRoomMembersList').innerHTML = `<div class="w-full p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-600 dark:text-amber-300 text-center">⏳ تم إرسال طلبك إلى الهوست (@${escapeHtml(currentRoom.hostUsername)})... بانتظار الموافقة للدخول!</div>`;
+                    document.getElementById('onlineChallengesList').innerHTML = '';
+                } else {
+                    // تم رفض الطلب أو إخراجه
+                    currentRoomId = null;
+                    activePanel.classList.add('hidden');
+                    browserPanel.classList.remove('hidden');
+                    showAlert('لم يتم قبول طلب دخولك للغرفة من قبل الـ Host.', 'error');
+                }
+                return;
+            }
+
+            // المستخدم هو الـ Host أو عضو مقبول داخل الغرفة
+            activePanel.classList.remove('hidden');
+            activePanel.classList.add('flex');
+            browserPanel.classList.add('hidden');
+
+            document.getElementById('activeRoomTitle').textContent = currentRoom.name;
+            document.getElementById('activeRoomHostName').textContent = '@' + currentRoom.hostUsername;
+            const typeBadge = document.getElementById('activeRoomTypeBadge');
+            const codeBox = document.getElementById('activeRoomCodeBox');
+            if (currentRoom.type === 'private') {
+                typeBadge.textContent = 'خاصة';
+                codeBox.classList.remove('hidden');
+                document.getElementById('activeRoomCodeText').textContent = currentRoom.code;
+            } else {
+                typeBadge.textContent = 'عامة';
+                codeBox.classList.add('hidden');
+            }
+
+            // عرض طلبات الانضمام للهوست فقط للموافقة أو الرفض
+            const reqBox = document.getElementById('hostJoinRequestsBox');
+            const reqList = document.getElementById('hostJoinRequestsList');
+            const pending = currentRoom.pendingRequests || [];
+            if (isHost && pending.length > 0) {
+                reqBox.classList.remove('hidden');
+                reqList.innerHTML = pending.map(req => `
+                    <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-studio-card border border-studio-border">
+                        <div class="flex items-center gap-2 text-xs font-bold">
+                            <span>${req.avatar && !req.avatar.startsWith('http') ? req.avatar : '🎧'}</span>
+                            <span>${escapeHtml(req.displayName)}</span>
+                            <span class="text-zinc-500 font-mono" dir="ltr">@${escapeHtml(req.username)}</span>
+                            <span class="text-amber-500">يريد دخول الغرفة</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="approveJoinRequest('${currentRoom.id}', '${req.uid}')" class="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs">موافقة</button>
+                            <button onclick="rejectJoinRequest('${currentRoom.id}', '${req.uid}')" class="px-3 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-500 font-bold text-xs">رفض</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                reqBox.classList.add('hidden');
+            }
+
+            // عرض قائمة الأعضاء المقبولين
+            const membersList = document.getElementById('activeRoomMembersList');
+            membersList.innerHTML = (currentRoom.approvedMembers || []).map(m => `
+                <div class="px-3 py-1.5 rounded-xl bg-studio-bg border border-studio-border text-xs font-bold flex items-center gap-1.5">
+                    <span>${m.avatar && !m.avatar.startsWith('http') ? m.avatar : '🎧'}</span>
+                    <span>${escapeHtml(m.displayName)}</span>
+                    ${m.uid === currentRoom.hostUid ? '<span class="px-1.5 py-0.5 text-[9px] rounded bg-amber-500/20 text-amber-500">HOST</span>' : ''}
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        // الاشتراك الفوري في التحديات المنشورة أونلاين (RULE 1 & RULE 2)
+        function subscribeToOnlineChallenges() {
+            if (!db || !currentUser) return;
+            const challengesCol = collection(db, 'artifacts', appId, 'public', 'data', 'online_challenges');
+            onSnapshot(challengesCol, (snapshot) => {
+                const items = [];
+                snapshot.forEach(docSnap => {
+                    items.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                // الترتيب في الذاكرة من الأحدث للأقدم
+                items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                onlineChallenges = items;
+                renderOnlineChallengesList();
+            }, (err) => {
+                console.error('Online snapshot error:', err);
+            });
+        }
+
+        // تحويل الصوت المعكوس إلى Base64 WAV مضغوط لنشره أونلاين
+        function encodeReversedBufferToCompactBase64(buffer) {
+            const targetRate = 11025; // معدل عينة مثالي وخفيف للمشاركة الفورية
+            const maxSeconds = 6;
+            const maxInputSamples = Math.min(buffer.length, Math.floor(buffer.sampleRate * maxSeconds));
+            const ratio = buffer.sampleRate / targetRate;
+            const outLength = Math.floor(maxInputSamples / ratio);
+
+            const inputData = buffer.getChannelData(0);
+            const dataLength = outLength * 2;
+            const arrayBuffer = new ArrayBuffer(44 + dataLength);
+            const view = new DataView(arrayBuffer);
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + dataLength, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, targetRate, true);
+            view.setUint32(28, targetRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataLength, true);
+
+            let offset = 44;
+            for (let i = 0; i < outLength; i++, offset += 2) {
+                const srcIdx = Math.min(maxInputSamples - 1, Math.floor(i * ratio));
+                const sample = Math.max(-1, Math.min(1, inputData[srcIdx]));
+                view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+            }
+
+            const bytes = new Uint8Array(arrayBuffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return 'data:audio/wav;base64,' + btoa(binary);
+        }
+
+        window.openPublishOnlineModal = function() {
+            if (!userProfile.isGoogleLinked || userProfile.isBanned) {
+                showAlert('يجب تسجيل الدخول بحساب Google لنشر تحديات أونلاين.', 'error');
+                openProfileModal();
+                return;
+            }
+            if (!currentRoomId) {
+                showAlert('ادخل أو أنشئ غرفة أونلاين أولاً لنشر تحديك بداخلها!', 'info');
+                setAppMode('online');
+                return;
+            }
+            if (!reversedBuffer) {
+                showAlert('سجّل صوتاً أو ارفع ملفاً صوتياً أولاً لتتمكن من نشره أونلاين!', 'info');
+                return;
+            }
+            const prefill = secretPhrase || recognizedTranscript || '';
+            document.getElementById('publishSecretInput').value = prefill;
+            document.getElementById('publishHintInput').value = '';
+            document.getElementById('publishOnlineModal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.closePublishOnlineModal = function() {
+            document.getElementById('publishOnlineModal').classList.add('hidden');
+        };
+
+        window.publishChallengeToCloud = async function() {
+            const secretVal = document.getElementById('publishSecretInput').value.trim();
+            const hintVal = document.getElementById('publishHintInput').value.trim();
+
+            if (!secretVal) {
+                showAlert('يرجى كتابة الكلمة أو الجملة الصحيحة ليتمكن اللاعبون من تخمينها!', 'info');
+                return;
+            }
+            if (!db || !currentUser || !currentRoomId) {
+                showAlert('يجب أن تكون داخل غرفة أونلاين لنشر التحدي.', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('confirmPublishBtn');
+            btn.disabled = true;
+
+            try {
+                const audioDataUri = encodeReversedBufferToCompactBase64(reversedBuffer);
+                const challengesCol = collection(db, 'artifacts', appId, 'public', 'data', 'online_challenges');
+
+                await addDoc(challengesCol, {
+                    roomId: currentRoomId,
+                    creatorUid: currentUser.uid,
+                    displayName: userProfile.displayName,
+                    username: userProfile.username,
+                    avatar: userProfile.avatar,
+                    secretPhrase: secretVal,
+                    hint: hintVal || `عدد الكلمات: ${secretVal.split(/\s+/).filter(Boolean).length}`,
+                    audioData: audioDataUri,
+                    solvedBy: [],
+                    createdAt: Date.now()
+                });
+
+                closePublishOnlineModal();
+                setAppMode('online');
+                showAlert('🚀 تم نشر تحديك الصوتي في الغرفة بنجاح!', 'success');
+            } catch (err) {
+                console.error('Publish error:', err);
+                showAlert('حدث خطأ أثناء نشر التحدي، تأكد أن المقطع قصير (أقل من 6 ثوانٍ).', 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        window.playOnlineChallengeAudio = function(challengeId) {
+            const item = onlineChallenges.find(c => c.id === challengeId);
+            if (!item || !item.audioData) return;
+
+            if (activeOnlineAudio) {
+                activeOnlineAudio.pause();
+                activeOnlineAudio = null;
+            }
+
+            activeOnlineAudio = new Audio(item.audioData);
+            activeOnlineAudio.play().catch(e => console.warn('Audio play error:', e));
+        };
+
+        window.submitOnlineChallengeGuess = async function(challengeId) {
+            const item = onlineChallenges.find(c => c.id === challengeId);
+            const inputEl = document.getElementById(`onlineGuessInput_${challengeId}`);
+            if (!item || !inputEl) return;
+
+            const guessText = inputEl.value.trim();
+            if (!guessText) {
+                showAlert('اكتب تخمينك في حقل التحدي أولاً!', 'info');
+                return;
+            }
+
+            const similarity = calculateSimilarity(guessText, item.secretPhrase);
+            if (similarity >= 85) {
+                showAlert(`🎉 إجابة صحيحة (${similarity}%)! الكلمة هي: "${item.secretPhrase}"`, 'success');
+                inputEl.value = '';
+                if (db && currentUser) {
+                    try {
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'online_challenges', challengeId);
+                        await updateDoc(docRef, {
+                            solvedBy: arrayUnion(userProfile.username)
+                        });
+                    } catch (e) {
+                        console.warn('Update solve error:', e);
+                    }
+                }
+            } else {
+                showAlert(`تخمين قريب بنسبة ${similarity}%، أعد الاستماع للصوت المعكوس وحاول مرة أخرى!`, 'error');
+            }
+        };
+
+        function renderOnlineChallengesList() {
+            const container = document.getElementById('onlineChallengesList');
+            if (!container || !currentRoomId) return;
+
+            const roomChallenges = onlineChallenges.filter(c => c.roomId === currentRoomId);
+
+            if (roomChallenges.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 px-4 rounded-2xl bg-studio-bg border border-dashed border-studio-border">
+                        <div class="text-2xl mb-1.5">🎙️</div>
+                        <h4 class="text-xs sm:text-sm font-bold text-zinc-800 dark:text-zinc-200">لا توجد تحديات في هذه الغرفة بعد</h4>
+                        <p class="text-[11px] text-zinc-500 mt-1">سجّل صوتك في الاستوديو بالأسفل واضغط "نشر تحدي أونلاين" لمشاركته مع أعضاء الغرفة!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = roomChallenges.map(item => {
+                const isSolvedByMe = Array.isArray(item.solvedBy) && item.solvedBy.includes(userProfile.username);
+                const solversCount = Array.isArray(item.solvedBy) ? item.solvedBy.length : 0;
+                const avatarHtml = (item.avatar && item.avatar.startsWith('http'))
+                    ? `<img src="${item.avatar}" class="w-full h-full object-cover">`
+                    : (item.avatar || '🎧');
+
+                return `
+                    <div class="p-4 sm:p-5 rounded-2xl bg-studio-bg border ${isSolvedByMe ? 'border-emerald-500/40' : 'border-studio-border'} flex flex-col gap-3.5 transition-all">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-studio-accent to-studio-cyan flex items-center justify-center text-lg text-white overflow-hidden shrink-0 shadow">
+                                    ${avatarHtml}
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-extrabold text-zinc-900 dark:text-white">${escapeHtml(item.displayName || 'لاعب')}</span>
+                                        <span class="text-xs font-mono text-zinc-500" dir="ltr">@${escapeHtml(item.username || 'player')}</span>
+                                    </div>
+                                    <div class="text-[11px] text-zinc-500 flex items-center gap-2 mt-0.5">
+                                        <span>💡 تلميح: ${escapeHtml(item.hint || 'استمع جيداً')}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <span class="px-2.5 py-1 rounded-xl bg-studio-surface text-[11px] font-bold text-zinc-600 dark:text-zinc-300">
+                                    ✅ حلّها: ${solversCount}
+                                </span>
+                                <button onclick="playOnlineChallengeAudio('${item.id}')" class="px-3.5 py-2 rounded-xl bg-studio-accent hover:bg-studio-accentHover text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all active:scale-95">
+                                    <i data-lucide="volume-2" class="w-4 h-4"></i>
+                                    <span>استمع للمعكوس</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        ${isSolvedByMe ? `
+                            <div class="px-4 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
+                                <span>🎉 لقد قمت بحل هذا التحدي! الإجابة: "${escapeHtml(item.secretPhrase)}"</span>
+                                <span class="text-[10px] uppercase tracking-wider">مكتمل</span>
+                            </div>
+                        ` : `
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input type="text" id="onlineGuessInput_${item.id}" placeholder="اكتب تخمينك لهذا المقطع..." class="flex-grow bg-studio-card border border-studio-border focus:border-studio-cyan rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-white outline-none" onkeydown="if(event.key==='Enter') submitOnlineChallengeGuess('${item.id}')">
+                                <button onclick="submitOnlineChallengeGuess('${item.id}')" class="px-4 py-2.5 rounded-xl bg-studio-cyan hover:opacity-90 text-zinc-950 font-bold text-xs sm:text-sm shrink-0 transition-all active:scale-95">
+                                    تخمين الإجابة
+                                </button>
+                            </div>
+                        `}
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, s => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[s]));
+        }
+
+        // ربط الدوال الأساسية بالنافذة العامة (window) لدعم أحداث HTML
+        window.setAppMode = setAppMode;
+        window.setDifficulty = setDifficulty;
+        window.toggleTheme = toggleTheme;
+        window.toggleRecording = toggleRecording;
+        window.requestMicrophonePermission = requestMicrophonePermission;
+        window.handleFileUpload = handleFileUpload;
+        window.switchMode = switchMode;
+        window.handleOriginalModeClick = handleOriginalModeClick;
+        window.togglePlayback = togglePlayback;
+        window.stopPlayback = stopPlayback;
+        window.downloadReversedWav = downloadReversedWav;
+        window.checkUserGuess = checkUserGuess;
+        window.toggleHelperRecording = toggleHelperRecording;
+        window.playHelperReversedAudio = playHelperReversedAudio;
+        window.handleDragStart = handleDragStart;
+        window.handleDragOver = handleDragOver;
+        window.handleDragLeave = handleDragLeave;
+        window.handleDropKey = handleDropKey;
+        window.hideAlert = hideAlert;
+
+        // تهيئة أيقونات Lucide ونظام الأونلاين عند تحميل الصفحة
+        lucide.createIcons();
+        initOnlineSystem();
+
+        // ==========================================
+        // 1. المتغيرات العامة وحالة التطبيق
+        // ==========================================
+        let audioCtx = null;
+        let mediaRecorder = null;
+        let mediaStream = null;
+        let recordedChunks = [];
+        
+        // متغيرات الرسم الحي أثناء التسجيل
+        let analyser = null;
+        let liveAnimationId = null;
+        let timerInterval = null;
+        let recordingStartTime = 0;
+        let isRecording = false;
+
+        // مخازن الصوت (AudioBuffers)
+        let originalBuffer = null;
+        let reversedBuffer = null;
+        let currentMode = 'reversed'; // 'reversed' أو 'original'
+
+        // متغيرات التشغيل الصوتي
+        let activeSourceNode = null;
+        let isPlaying = false;
+        let playbackStartTime = 0;
+        let pauseOffset = 0;
+        let playbackAnimId = null;
+
+        // مراجع الكانفاس وسياقات الرسم ثنائية الأبعاد
+        const liveCanvas = document.getElementById('liveCanvas');
+        const liveCtx = liveCanvas.getContext('2d');
+        const waveformCanvas = document.getElementById('waveformCanvas');
+        const waveCtx = waveformCanvas.getContext('2d');
+        const waveformContainer = document.getElementById('waveformContainer');
+
+        // متغيرات وضع التطبيق والتخمين ("وضعك")
+        let appMode = 'normal'; // 'normal' (عكس عادي) أو 'guess' (تخمين)
+        let difficultyLevel = 'easy'; // 'easy' (سهل), 'medium' (متوسط), 'hard' (صعب)
+        let speechRecognition = null;
+        let recognizedTranscript = '';
+        let secretPhrase = '';
+        let isOriginalLocked = false;
+        let needsManualSecret = false;
+
+        // ميزات السحب والإفلات للمفتاح والقفل المرح
+        function handleDragStart(e) {
+            e.dataTransfer.setData('text/plain', 'magic-key');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            const dropZone = document.getElementById('dropZoneLock');
+            dropZone.classList.add('bg-indigo-500/20', 'border-solid', 'scale-[1.02]');
+        }
+
+        function handleDragLeave(e) {
+            const dropZone = document.getElementById('dropZoneLock');
+            dropZone.classList.remove('bg-indigo-500/20', 'border-solid', 'scale-[1.02]');
+        }
+
+        function handleDropKey(e) {
+            e.preventDefault();
+            const dropZone = document.getElementById('dropZoneLock');
+            dropZone.classList.remove('bg-indigo-500/20', 'border-solid', 'scale-[1.02]');
+
+            const input = document.getElementById('manualSecretInput');
+            const val = input.value.trim();
+
+            if (!val) {
+                showAlert('🔑 تم إسقاط المفتاح بنجاح! ولكن ينسى اللاعب كتابة الجملة السرية في الحقل أولاً.', 'info');
+                input.focus();
+                return;
+            }
+
+            secretPhrase = val;
+            needsManualSecret = false;
+            isOriginalLocked = true;
+            input.value = '';
+            hideAlert();
+            updateGuessChallengeUI();
+            showAlert('🎉 تم تفعيل القفل بنجاح عبر المفتاح السحري! استمع للمعكوس وحاول تخمين الجملة.', 'success');
+        }
+
+        // متغيرات مساعد التخمين الصوتي (مرتين في المستوى السهل)
+        let helperAttemptsUsed = 0;
+        const MAX_HELPER_ATTEMPTS = 2;
+        let helperMediaRecorder = null;
+        let helperMediaStream = null;
+        let helperRecordedChunks = [];
+        let isHelperRecording = false;
+        let helperReversedBuffer = null;
+        let helperSourceNode = null;
+        let isHelperPlaying = false;
+
+        // ==========================================
+        // إدارة المظهر (وضع داكن Dark / وضع منوّر Light)
+        // ==========================================
+        let isDarkMode = true;
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            const htmlEl = document.documentElement;
+            const icon = document.getElementById('themeToggleIcon');
+            const text = document.getElementById('themeToggleText');
+
+            if (isDarkMode) {
+                htmlEl.classList.add('dark');
+                icon.setAttribute('data-lucide', 'sun');
+                icon.className = 'w-4 h-4 text-amber-500';
+                text.textContent = 'وضع منوّر';
+            } else {
+                htmlEl.classList.remove('dark');
+                icon.setAttribute('data-lucide', 'moon');
+                icon.className = 'w-4 h-4 text-studio-accent';
+                text.textContent = 'وضع دارك';
+            }
+
+            lucide.createIcons();
+            if (originalBuffer && reversedBuffer) {
+                drawStaticWaveform();
+            }
+        }
+
+        // ==========================================
+        // 2. إدارة اختيار الوضع ("وضعك": عكس عادي / تخمين) والمستويات
+        // ==========================================
+        function setDifficulty(level) {
+            difficultyLevel = level;
+            const easyBtn = document.getElementById('diffEasyBtn');
+            const medBtn = document.getElementById('diffMediumBtn');
+            const hardBtn = document.getElementById('diffHardBtn');
+            const descText = document.getElementById('difficultyDescText');
+
+            const baseInactive = 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white';
+            easyBtn.className = baseInactive;
+            medBtn.className = baseInactive;
+            hardBtn.className = baseInactive;
+
+            if (level === 'easy') {
+                easyBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-emerald-500 text-zinc-950 shadow';
+                descText.textContent = 'المستوى السهل: متاح لك عكس صوتك (مرتين) للمساعدة + تلميح كامل بعدد الكلمات والحروف.';
+            } else if (level === 'medium') {
+                medBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-amber-500 text-zinc-950 shadow';
+                descText.textContent = 'المستوى المتوسط: بدون مساعد عكس الصوت، مع تلميح بعدد الكلمات فقط.';
+            } else {
+                hardBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-rose-500 text-white shadow';
+                descText.textContent = 'المستوى الصعب: بدون مساعد صوتي وبدون تلميحات، وتحتاج دقة 95% لفتح القفل!';
+            }
+
+            if (level !== 'easy') {
+                stopHelperRecordingIfActive();
+                stopHelperPlayback();
+            }
+
+            updateGuessChallengeUI();
+        }
+
+        function setAppMode(mode) {
+            appMode = mode;
+            const normalBtn = document.getElementById('appModeNormalBtn');
+            const guessBtn = document.getElementById('appModeGuessBtn');
+            const onlineBtn = document.getElementById('appModeOnlineBtn');
+            const guessBanner = document.getElementById('guessBanner');
+            const onlineArena = document.getElementById('onlineArenaSection');
+            const speechBadge = document.getElementById('speechBadge');
+            const captureSubtitle = document.getElementById('captureSubtitle');
+            const livePlaceholderText = document.getElementById('livePlaceholderText');
+
+            const inactiveClass = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white';
+            normalBtn.className = inactiveClass;
+            guessBtn.className = inactiveClass;
+            onlineBtn.className = inactiveClass;
+            onlineArena.classList.add('hidden');
+            onlineArena.classList.remove('flex');
+
+            if (mode === 'normal') {
+                normalBtn.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 bg-studio-accent text-white shadow';
+                guessBanner.classList.add('hidden');
+                speechBadge.classList.add('hidden');
+                speechBadge.classList.remove('flex');
+                captureSubtitle.textContent = 'سجّل صوتك مباشرة عبر الميكروفون أو اختر ملفاً صوتياً من جهازك';
+                livePlaceholderText.textContent = 'اضغط على "بدء التسجيل" لمشاهدة الموجة الصوتية الحية';
+
+                // إلغاء أي قفل في الوضع العادي
+                isOriginalLocked = false;
+                needsManualSecret = false;
+                updateGuessChallengeUI();
+            } else if (mode === 'online') {
+                // منع دخول الأونلاين إلا بحساب مسجل وغير محظور
+                if (userProfile.isBanned) {
+                    showAlert('⛔ حسابك محظور نهائياً (Offline فقط) ولا يمكنك دخول الأونلاين.', 'error');
+                    setAppMode('normal');
+                    return;
+                }
+                if (!userProfile.isGoogleLinked) {
+                    showAlert('🔒 قسم الأونلاين متاح للمسجلين بحساب Google فقط! يرجى تسجيل الدخول أولاً.', 'info');
+                    openProfileModal();
+                    setAppMode('normal');
+                    return;
+                }
+                onlineBtn.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 bg-studio-cyan text-zinc-950 shadow';
+                guessBanner.classList.add('hidden');
+                speechBadge.classList.add('hidden');
+                speechBadge.classList.remove('flex');
+                onlineArena.classList.remove('hidden');
+                onlineArena.classList.add('flex');
+                captureSubtitle.textContent = 'سجّل صوتك هنا ثم اضغط "نشر تحدي أونلاين" لمشاركته داخل الغرفة';
+                livePlaceholderText.textContent = 'سجّل مقطعاً قصيراً وانشره في غرفتك الأونلاين!';
+                isOriginalLocked = false;
+                needsManualSecret = false;
+                updateGuessChallengeUI();
+                renderOnlineRoomsUI();
+                renderOnlineChallengesList();
+            } else {
+                guessBtn.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 bg-amber-500 text-zinc-950 shadow';
+                guessBanner.classList.remove('hidden');
+                speechBadge.classList.remove('hidden');
+                speechBadge.classList.add('flex');
+                captureSubtitle.textContent = 'سجّل جملة بصوت واضح ليتعرف عليها النظام سراً، أو ارفع ملفاً صوتياً لبدء التحدي';
+                livePlaceholderText.textContent = 'في وضع التخمين: سيتم التعرف على كلامك سراً وقفل الصوت الأصلي!';
+
+                // إذا كان هناك صوت محمّل مسبقاً، فعّل التحدي عليه فوراً وأظهر صندوق التخمين
+                if (originalBuffer) {
+                    if (secretPhrase) {
+                        isOriginalLocked = true;
+                        needsManualSecret = false;
+                    } else {
+                        isOriginalLocked = true;
+                        needsManualSecret = true;
+                    }
+                    if (currentMode === 'original') {
+                        switchMode('reversed');
+                    }
+                    updateGuessChallengeUI();
+                } else {
+                    showAlert('اخترت وضع التخمين! سجّل صوتك الآن أو ارفع ملفاً صوتياً ليظهر لك القفل وصندوق التخمين.', 'info');
+                }
+            }
+            lucide.createIcons();
+        }
+
+        // تحديث واجهة القفل وصندوق التخمين حسب المستوى
+        function updateGuessChallengeUI() {
+            const challengeBox = document.getElementById('guessChallengeBox');
+            const secretSetupView = document.getElementById('secretSetupView');
+            const lockedGuessView = document.getElementById('lockedGuessView');
+            const unlockedSuccessView = document.getElementById('unlockedSuccessView');
+            const originalModeIcon = document.getElementById('originalModeIcon');
+            const originalLockPill = document.getElementById('originalLockPill');
+            const origBtn = document.getElementById('modeOriginalBtn');
+            const voiceHelperSection = document.getElementById('voiceHelperSection');
+            const voiceHelperLockedNote = document.getElementById('voiceHelperLockedNote');
+
+            if (appMode === 'normal' || !originalBuffer) {
+                challengeBox.classList.add('hidden');
+                originalModeIcon.setAttribute('data-lucide', 'play');
+                originalLockPill.classList.add('hidden');
+                origBtn.classList.remove('opacity-75');
+                lucide.createIcons();
+                return;
+            }
+
+            challengeBox.classList.remove('hidden');
+
+            // التحكم بظهور ميزة عكس صوت اللاعب حسب المستوى (متاحة في المستوى السهل فقط)
+            if (difficultyLevel === 'easy') {
+                voiceHelperSection.classList.remove('hidden');
+                voiceHelperLockedNote.classList.add('hidden');
+                updateVoiceHelperUI();
+            } else {
+                voiceHelperSection.classList.add('hidden');
+                voiceHelperLockedNote.classList.remove('hidden');
+            }
+
+            if (isOriginalLocked) {
+                // تحديث زر الصوت الأصلي ليظهر بشكل مقفل
+                originalModeIcon.setAttribute('data-lucide', 'lock');
+                originalLockPill.classList.remove('hidden');
+                origBtn.classList.add('opacity-80');
+
+                if (needsManualSecret) {
+                    secretSetupView.classList.remove('hidden');
+                    lockedGuessView.classList.add('hidden');
+                    unlockedSuccessView.classList.add('hidden');
+                    challengeBox.className = 'mb-6 rounded-2xl border transition-all duration-500 overflow-hidden bg-studio-bg/90 border-amber-500/40';
+                } else {
+                    secretSetupView.classList.add('hidden');
+                    lockedGuessView.classList.remove('hidden');
+                    unlockedSuccessView.classList.add('hidden');
+                    challengeBox.className = 'mb-6 rounded-2xl border transition-all duration-500 overflow-hidden bg-studio-bg/90 border-amber-500/40 shadow-lg shadow-amber-500/5';
+                    updateSecretHint();
+                }
+            } else {
+                // القفل مفتوح!
+                originalModeIcon.setAttribute('data-lucide', 'unlock');
+                originalLockPill.classList.add('hidden');
+                origBtn.classList.remove('opacity-80');
+
+                secretSetupView.classList.add('hidden');
+                lockedGuessView.classList.add('hidden');
+                unlockedSuccessView.classList.remove('hidden');
+                document.getElementById('revealedSecretText').textContent = secretPhrase;
+                challengeBox.className = 'mb-6 rounded-2xl border transition-all duration-500 overflow-hidden bg-studio-bg/90 border-emerald-500/40 shadow-lg shadow-emerald-500/10';
+            }
+            lucide.createIcons();
+        }
+
+        // تحديث التلميح حسب مستوى الصعوبة المختار
+        function updateSecretHint() {
+            const hintPill = document.getElementById('secretHintPill');
+            const hintText = document.getElementById('secretHintText');
+            const cleaned = secretPhrase.trim();
+            if (!cleaned) return;
+
+            if (difficultyLevel === 'hard') {
+                hintPill.classList.add('hidden');
+                return;
+            }
+
+            hintPill.classList.remove('hidden');
+            const words = cleaned.split(/\s+/).filter(Boolean);
+            const charCount = cleaned.replace(/\s+/g, '').length;
+            const wordsLabel = words.length === 1 ? 'كلمة واحدة' : (words.length === 2 ? 'كلمتان' : `${words.length} كلمات`);
+
+            if (difficultyLevel === 'easy') {
+                hintText.textContent = `تلميح (سهل): ${wordsLabel} (${charCount} حرف)`;
+            } else {
+                hintText.textContent = `تلميح (متوسط): ${wordsLabel}`;
+            }
+        }
+
+        function stopHelperRecordingIfActive() {
+            if (helperMediaRecorder && helperMediaRecorder.state !== 'inactive') {
+                helperMediaRecorder.stop();
+            }
+            isHelperRecording = false;
+            updateVoiceHelperUI();
+        }
+
+        function playHelperReversedAudio() {
+            if (!helperReversedBuffer) return;
+
+            if (isHelperPlaying) {
+                stopHelperPlayback();
+                return;
+            }
+
+            stopPlayback();
+            initAudioContext();
+
+            const playIcon = document.getElementById('helperPlayIcon');
+            const playText = document.getElementById('helperPlayText');
+
+            helperSourceNode = audioCtx.createBufferSource();
+            helperSourceNode.buffer = helperReversedBuffer;
+            helperSourceNode.connect(audioCtx.destination);
+
+            helperSourceNode.onended = () => {
+                isHelperPlaying = false;
+                if (playIcon && playText) {
+                    playIcon.setAttribute('data-lucide', 'volume-2');
+                    playText.textContent = 'اسمع صوتك معكوساً';
+                    lucide.createIcons();
+                }
+            };
+
+            isHelperPlaying = true;
+            if (playIcon && playText) {
+                playIcon.setAttribute('data-lucide', 'square');
+                playText.textContent = 'إيقاف صوتك';
+                lucide.createIcons();
+            }
+
+            helperSourceNode.start(0);
+        }
+
+        function stopHelperPlayback() {
+            if (helperSourceNode) {
+                try { helperSourceNode.stop(); } catch (e) {}
+                helperSourceNode.disconnect();
+                helperSourceNode = null;
+            }
+            isHelperPlaying = false;
+            const playIcon = document.getElementById('helperPlayIcon');
+            const playText = document.getElementById('helperPlayText');
+            if (playIcon && playText) {
+                playIcon.setAttribute('data-lucide', 'volume-2');
+                playText.textContent = 'اسمع صوتك معكوساً';
+                lucide.createIcons();
+            }
+        }
+
+        function resetVoiceHelperState() {
+            stopHelperRecordingIfActive();
+            stopHelperPlayback();
+            helperAttemptsUsed = 0;
+            helperReversedBuffer = null;
+            updateVoiceHelperUI();
+        }
+
+        function updateVoiceHelperUI() {
+            const remaining = Math.max(0, MAX_HELPER_ATTEMPTS - helperAttemptsUsed);
+            const counterText = document.getElementById('voiceHelperRemainingText');
+            const recBtn = document.getElementById('helperRecordBtn');
+            const recIcon = document.getElementById('helperRecordIcon');
+            const recText = document.getElementById('helperRecordText');
+            const playBtn = document.getElementById('helperPlayReversedBtn');
+
+            if (!counterText || !recBtn) return;
+
+            counterText.textContent = `المحاولات المتبقية: ${remaining} من ${MAX_HELPER_ATTEMPTS}`;
+
+            if (helperReversedBuffer) {
+                playBtn.classList.remove('hidden');
+            } else {
+                playBtn.classList.add('hidden');
+            }
+
+            if (isHelperRecording) {
+                recBtn.disabled = false;
+                recBtn.className = 'py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 bg-studio-rose text-white shadow-lg shadow-studio-rose/30 transition-all animate-pulse';
+                recIcon.setAttribute('data-lucide', 'square');
+                recText.textContent = 'إيقاف وعكس صوتك الآن...';
+            } else if (remaining <= 0) {
+                recBtn.disabled = true;
+                recBtn.className = 'py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 bg-studio-surface/60 text-zinc-400 dark:text-zinc-500 border border-studio-border cursor-not-allowed';
+                recIcon.setAttribute('data-lucide', 'lock');
+                recText.textContent = 'انتهت محاولاتك الصوتية (0 من 2)';
+            } else {
+                recBtn.disabled = false;
+                recBtn.className = 'py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 bg-studio-surface hover:bg-zinc-300 dark:hover:bg-zinc-800 text-cyan-700 dark:text-studio-cyan border border-studio-cyan/30 transition-all active:scale-95';
+                recIcon.setAttribute('data-lucide', 'mic');
+                const attemptNum = helperAttemptsUsed + 1;
+                recText.textContent = `سجّل محاولتك الصوتية (المحاولة ${attemptNum})`;
+            }
+            lucide.createIcons();
+        }
+
+        async function toggleHelperRecording() {
+            if (isHelperRecording) {
+                stopHelperRecordingIfActive();
+                return;
+            }
+
+            if (helperAttemptsUsed >= MAX_HELPER_ATTEMPTS) {
+                showAlert('لقد استنفدت محاولتيك الصوتيتين (2 من 2) في هذا التحدي!', 'info');
+                return;
+            }
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showAlert('متصفحك لا يدعم تسجيل الصوت.', 'error');
+                return;
+            }
+
+            try {
+                stopPlayback();
+                stopHelperPlayback();
+                initAudioContext();
+
+                helperMediaStream = await navigator.mediaDevices.getUserMedia({
+                    audio: { echoCancellation: true, noiseSuppression: true }
+                });
+
+                helperRecordedChunks = [];
+                helperMediaRecorder = new MediaRecorder(helperMediaStream);
+
+                helperMediaRecorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) helperRecordedChunks.push(e.data);
+                };
+
+                helperMediaRecorder.onstop = async () => {
+                    helperMediaStream.getTracks().forEach(t => t.stop());
+                    const blob = new Blob(helperRecordedChunks, { type: helperMediaRecorder.mimeType || 'audio/webm' });
+                    try {
+                        const arrayBuf = await blob.arrayBuffer();
+                        const decoded = await audioCtx.decodeAudioData(arrayBuf);
+                        helperReversedBuffer = createReversedAudioBuffer(decoded);
+                        helperAttemptsUsed++;
+                        updateVoiceHelperUI();
+                        playHelperReversedAudio();
+                    } catch (err) {
+                        console.error('Helper decode error:', err);
+                        showAlert('تعذر معالجة تسجيلك الصوتي، حاول مرة أخرى.', 'error');
+                        updateVoiceHelperUI();
+                    }
+                };
+
+                helperMediaRecorder.start();
+                isHelperRecording = true;
+                updateVoiceHelperUI();
+            } catch (err) {
+                console.error('Helper mic error:', err);
+                showAlert('تعذر الوصول للميكروفون لتسجيل المحاولة الصوتية.', 'error');
+            }
+        }
+
+        function saveManualSecret() {
+            const input = document.getElementById('manualSecretInput');
+            const val = input.value.trim();
+            if (!val) {
+                showAlert('يرجى كتابة الكلمة أو الجملة السرية أولاً!', 'info');
+                input.focus();
+                return;
+            }
+            secretPhrase = val;
+            needsManualSecret = false;
+            isOriginalLocked = true;
+            input.value = '';
+            hideAlert();
+            updateGuessChallengeUI();
+        }
+
+        // التعامل مع النقر على زر "الصوت الأصلي"
+        function handleOriginalModeClick() {
+            if (appMode === 'guess' && isOriginalLocked) {
+                const lockedView = document.getElementById('lockedGuessView');
+                const setupView = document.getElementById('secretSetupView');
+                const targetBox = needsManualSecret ? setupView : lockedView;
+                
+                targetBox.classList.remove('animate-shake');
+                void targetBox.offsetWidth; // إعادة تشغيل الأنيميشن
+                targetBox.classList.add('animate-shake');
+
+                if (needsManualSecret) {
+                    showAlert('أدخل الجملة السرية في الصندوق أدناه أولاً لبدء تحدي القفل!', 'info');
+                    document.getElementById('manualSecretInput').focus();
+                } else {
+                    showAlert('🔒 الصوت الأصلي مقفل! يجب عليك تخمين الجملة الصحيحة في صندوق التخمين لفتح القفل والاستماع إليه.', 'info');
+                    document.getElementById('guessInput').focus();
+                }
+                return;
+            }
+            switchMode('original');
+        }
+
+        // ==========================================
+        // 3. دوال المساعدة والتنبيهات
+        // ==========================================
+        // 2. دوال المساعدة والتنبيهات
+        // ==========================================
+        
+        // تهيئة سياق الصوت Web Audio API عند تفاعل المستخدم
+        function initAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContextClass();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // عرض رسالة تنبيه للمستخدم باللغة العربية
+        function showAlert(message, type = 'error') {
+            const alertBox = document.getElementById('alertBox');
+            const alertMessage = document.getElementById('alertMessage');
+            const alertIcon = document.getElementById('alertIcon');
+
+            alertBox.classList.remove('hidden', 'bg-rose-500/10', 'border-rose-500/30', 'text-rose-200', 'bg-emerald-500/10', 'border-emerald-500/30', 'text-emerald-200', 'bg-amber-500/10', 'border-amber-500/30', 'text-amber-200');
+
+            if (type === 'error') {
+                alertBox.classList.add('bg-rose-500/10', 'border-rose-500/30', 'text-rose-800', 'dark:text-rose-200');
+                alertIcon.setAttribute('data-lucide', 'alert-triangle');
+            } else if (type === 'success') {
+                alertBox.classList.add('bg-emerald-500/10', 'border-emerald-500/30', 'text-emerald-800', 'dark:text-emerald-200');
+                alertIcon.setAttribute('data-lucide', 'check-circle-2');
+            } else {
+                alertBox.classList.add('bg-amber-500/10', 'border-amber-500/30', 'text-amber-800', 'dark:text-amber-200');
+                alertIcon.setAttribute('data-lucide', 'info');
+            }
+
+            alertMessage.textContent = message;
+            lucide.createIcons();
+        }
+
+        function hideAlert() {
+            document.getElementById('alertBox').classList.add('hidden');
+        }
+
+        // تنسيق الوقت بصيغة MM:SS.d
+        function formatTime(seconds) {
+            if (!isFinite(seconds) || seconds < 0) seconds = 0;
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            const tenths = Math.floor((seconds % 1) * 10);
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${tenths}`;
+        }
+
+        // ضبط أبعاد الـ Canvas بدقة عالية (Retina / High DPI)
+        function resizeCanvases() {
+            const dpr = window.devicePixelRatio || 1;
+            
+            // ضبط كانفاس التسجيل الحي
+            const liveRect = liveCanvas.parentElement.getBoundingClientRect();
+            liveCanvas.width = liveRect.width * dpr;
+            liveCanvas.height = liveRect.height * dpr;
+            liveCtx.scale(dpr, dpr);
+
+            // ضبط كانفاس الموجة التفاعلية
+            const waveRect = waveformContainer.getBoundingClientRect();
+            waveformCanvas.width = waveRect.width * dpr;
+            waveformCanvas.height = waveRect.height * dpr;
+            waveCtx.scale(dpr, dpr);
+
+            // إعادة رسم الموجة إذا كان هناك صوت محمل
+            if (originalBuffer && reversedBuffer) {
+                drawStaticWaveform();
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvases);
+        window.addEventListener('load', () => {
+            resizeCanvases();
+            // تفاعل النقر والسحب على الموجة الصوتية
+            setupWaveformScrubbing();
+        });
+
+        // ==========================================
+        // 3. تسجيل الصوت المباشر من الميكروفون
+        // ==========================================
+        async function toggleRecording() {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                await startRecording();
+            }
+        }
+
+        async function startRecording() {
+            hideAlert();
+            stopPlayback(); // إيقاف أي تشغيل حالي
+
+            // التحقق من دعم المتصفح
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showAlert('متصفحك الحالي لا يدعم ميزة تسجيل الصوت المباشر. يرجى استخدام متصفح حديث مثل Chrome أو Firefox أو Safari.', 'error');
+                return;
+            }
+
+            try {
+                initAudioContext();
+                
+                // طلب إذن الوصول للميكروفون
+                mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+
+                // إخفاء كراش 343 في حال تم السماح بنجاح
+                document.getElementById('micCrash343Modal').classList.add('hidden');
+
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(mediaStream);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data && event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    // إغلاق مسارات الميكروفون لتحرير الجهاز
+                    mediaStream.getTracks().forEach(track => track.stop());
+                    
+                    const audioBlob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                    await processAudioBlob(audioBlob, 'تسجيل ميكروفون مباشر', true);
+                };
+
+                // إعداد محلل الموجات الصوتية للرسم الحي
+                const source = audioCtx.createMediaStreamSource(mediaStream);
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+
+                // تشغيل التعرف التلقائي على الكلام (Speech-to-Text) في وضع التخمين
+                recognizedTranscript = '';
+                secretPhrase = '';
+                if (appMode === 'guess') {
+                    startSpeechRecognition();
+                }
+
+                // بدء التسجيل
+                mediaRecorder.start();
+                isRecording = true;
+                updateRecordingUI(true);
+                startRecordTimer();
+                drawLiveVisualizer();
+
+            } catch (err) {
+                console.error('Microphone error:', err);
+                // إظهار شاشة كراش 343 بغض النظر عن نوع خطأ الإذن أو الرفض
+                document.getElementById('micCrash343Modal').classList.remove('hidden');
+                lucide.createIcons();
+            }
+        }
+
+        // دالة مخصصة لطلب الإذن من زر كراش 343
+        async function requestMicrophonePermission() {
+            document.getElementById('micCrash343Modal').classList.add('hidden');
+            await startRecording();
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            stopSpeechRecognition();
+            isRecording = false;
+            updateRecordingUI(false);
+            clearInterval(timerInterval);
+            cancelAnimationFrame(liveAnimationId);
+            
+            // مسح كانفاس التسجيل الحي
+            const rect = liveCanvas.parentElement.getBoundingClientRect();
+            liveCtx.clearRect(0, 0, rect.width, rect.height);
+        }
+
+        // تحديث واجهة زر التسجيل والمؤشر الحي
+        function updateRecordingUI(recording) {
+            const btn = document.getElementById('recordBtn');
+            const btnIcon = document.getElementById('recordBtnIcon');
+            const btnText = document.getElementById('recordBtnText');
+            const indicator = document.getElementById('recIndicator');
+            const placeholder = document.getElementById('livePlaceholder');
+
+            if (recording) {
+                btn.classList.remove('bg-studio-rose', 'hover:bg-rose-600');
+                btn.classList.add('bg-zinc-800', 'hover:bg-zinc-700', 'border', 'border-studio-rose', 'record-glow');
+                btnIcon.setAttribute('data-lucide', 'square');
+                btnText.textContent = 'إيقاف التسجيل ومعالجة الصوت';
+                indicator.classList.remove('bg-zinc-400', 'dark:bg-zinc-600');
+                indicator.classList.add('bg-studio-rose', 'animate-pulse-fast');
+                placeholder.classList.add('hidden');
+            } else {
+                btn.classList.add('bg-studio-rose', 'hover:bg-rose-600');
+                btn.classList.remove('bg-zinc-800', 'hover:bg-zinc-700', 'border', 'border-studio-rose', 'record-glow');
+                btnIcon.setAttribute('data-lucide', 'mic');
+                btnText.textContent = 'بدء التسجيل المباشر';
+                indicator.classList.add('bg-zinc-400', 'dark:bg-zinc-600');
+                indicator.classList.remove('bg-studio-rose', 'animate-pulse-fast');
+                placeholder.classList.remove('hidden');
+            }
+            lucide.createIcons();
+        }
+
+        // مؤقت زمن التسجيل الحي
+        function startRecordTimer() {
+            recordingStartTime = performance.now();
+            const timerEl = document.getElementById('recordTimer');
+            timerEl.textContent = '00:00.0';
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const elapsedSec = (performance.now() - recordingStartTime) / 1000;
+                timerEl.textContent = formatTime(elapsedSec);
+            }, 100);
+        }
+
+        // رسم الموجة الصوتية الحية أثناء التسجيل
+        function drawLiveVisualizer() {
+            if (!isRecording || !analyser) return;
+
+            const rect = liveCanvas.parentElement.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+
+            liveCtx.clearRect(0, 0, width, height);
+
+            const barCount = 48;
+            const gap = 4;
+            const barWidth = Math.max(3, (width - (barCount - 1) * gap) / barCount);
+            const step = Math.floor(bufferLength / barCount);
+
+            for (let i = 0; i < barCount; i++) {
+                const value = dataArray[i * step] || 0;
+                const percent = value / 255;
+                const barHeight = Math.max(6, percent * (height * 0.8));
+
+                const x = i * (barWidth + gap);
+                const y = (height - barHeight) / 2;
+
+                const gradient = liveCtx.createLinearGradient(0, y, 0, y + barHeight);
+                gradient.addColorStop(0, '#f43f5e');
+                gradient.addColorStop(0.5, '#6366f1');
+                gradient.addColorStop(1, '#06b6d4');
+
+                liveCtx.fillStyle = gradient;
+                liveCtx.beginPath();
+                liveCtx.roundRect(x, y, barWidth, barHeight, 3);
+                liveCtx.fill();
+            }
+
+            liveAnimationId = requestAnimationFrame(drawLiveVisualizer);
+        }
+
+        // ==========================================
+        // التعرف التلقائي على الكلام العربي (Web Speech API)
+        // ==========================================
+        function startSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const badgeText = document.getElementById('speechBadgeText');
+
+            if (!SpeechRecognition) {
+                badgeText.textContent = 'التعرف التلقائي غير مدعوم في هذا المتصفح';
+                return;
+            }
+
+            try {
+                // إيقاف أي جلسة تعرف سابقة لمنع التداخل
+                if (speechRecognition) {
+                    try { speechRecognition.stop(); } catch(e) {}
+                }
+
+                speechRecognition = new SpeechRecognition();
+                speechRecognition.lang = 'ar-SA';
+                speechRecognition.continuous = true;
+                speechRecognition.interimResults = true;
+
+                let finalTranscript = '';
+
+                speechRecognition.onstart = () => {
+                    badgeText.textContent = 'جاري الاستماع بدقة عالية للكلمات السرية...';
+                };
+
+                speechRecognition.onresult = (event) => {
+                    let interim = '';
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            finalTranscript += event.results[i][0].transcript + ' ';
+                        } else {
+                            interim += event.results[i][0].transcript;
+                        }
+                    }
+                    // تحديث النص المعترف به سراً
+                    recognizedTranscript = (finalTranscript + interim).trim();
+                };
+
+                speechRecognition.onerror = (event) => {
+                    console.warn('Speech recognition error:', event.error);
+                    if (event.error === 'not-allowed') {
+                        badgeText.textContent = 'تم حظر التعرف الصوتي';
+                    }
+                };
+
+                speechRecognition.onend = () => {
+                    // إذا كان التسجيل الصوتي لا يزال يعمل ولم تنتهي الجلسة، نعيد تفعيل التعرف لضمان التقاط الكلمات بدقة
+                    if (isRecording && appMode === 'guess') {
+                        try {
+                            speechRecognition.start();
+                        } catch(e) {}
+                    }
+                };
+
+                speechRecognition.start();
+            } catch (e) {
+                console.warn('Could not start SpeechRecognition:', e);
+            }
+        }
+
+        function stopSpeechRecognition() {
+            const badgeText = document.getElementById('speechBadgeText');
+            if (badgeText) badgeText.textContent = 'التعرف الصوتي نشط';
+            if (speechRecognition) {
+                try {
+                    speechRecognition.stop();
+                } catch (e) {}
+                speechRecognition = null;
+            }
+        }
+
+        // ==========================================
+        // 4. رفع ملف صوتي من الجهاز
+        // ==========================================
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            hideAlert();
+            if (isRecording) stopRecording();
+            stopPlayback();
+
+            if (!file.type.startsWith('audio/')) {
+                showAlert('يرجى اختيار ملف صوتي صالح (مثل MP3, WAV, OGG).', 'error');
+                return;
+            }
+
+            await processAudioBlob(file, file.name, false);
+            // إعادة تعيين حقل الإدخال للسماح برفع نفس الملف مرة أخرى
+            event.target.value = '';
+        }
+
+        // ==========================================
+        // 5. معالجة الصوت وعكسه زمنياً باستخدام Web Audio API
+        // ==========================================
+        async function processAudioBlob(blob, sourceName, isFromLiveMic = false) {
+            try {
+                initAudioContext();
+                const arrayBuffer = await blob.arrayBuffer();
+                
+                // فك تشفير البيانات الصوتية إلى AudioBuffer
+                originalBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                
+                // إنشاء نسخة معكوسة زمنياً بدقة عالية
+                reversedBuffer = createReversedAudioBuffer(originalBuffer);
+
+                // تفعيل قسم المعاينة والاستوديو
+                const workspace = document.getElementById('studioWorkspace');
+                workspace.classList.remove('opacity-50', 'pointer-events-none');
+
+                // تحديث معلومات الملف الصوتي
+                const durationSec = originalBuffer.duration.duration ? originalBuffer.duration.toFixed(1) : originalBuffer.duration.toFixed(1);
+                const sampleRateKHz = (originalBuffer.sampleRate / 1000).toFixed(1);
+                const channelsText = originalBuffer.numberOfChannels === 1 ? 'أحادي (Mono)' : 'ستيريو (Stereo)';
+                document.getElementById('audioInfoText').textContent = 
+                    `المصدر: ${sourceName} • المدة: ${durationSec} ثانية • ${sampleRateKHz} kHz (${channelsText})`;
+
+                // إعداد حالة وضع التخمين إن كان مفعّلاً
+                document.getElementById('guessInput').value = '';
+                document.getElementById('guessFeedbackBox').classList.add('hidden');
+                resetVoiceHelperState();
+
+                if (appMode === 'guess') {
+                    isOriginalLocked = true;
+                    if (isFromLiveMic && recognizedTranscript.trim().length > 0) {
+                        secretPhrase = recognizedTranscript.trim();
+                        needsManualSecret = false;
+                        showAlert('✨ تم التقاط الكلمات السرية من صوتك بنجاح! ظهر المفتاح السحري، اسحبه وضعه في القفل للبدء.', 'success');
+                    } else {
+                        secretPhrase = '';
+                        needsManualSecret = true;
+                        showAlert('🗝️ تم رسبن المفتاح السحري! قوم خذه واسحبه بالماوس إلى منطقة القفل لتفعيل التحدي.', 'info');
+                    }
+                } else {
+                    isOriginalLocked = false;
+                    needsManualSecret = false;
+                }
+
+                // إعادة ضبط المشغل إلى الوضع المعكوس والبداية
+                pauseOffset = 0;
+                switchMode('reversed');
+                updateGuessChallengeUI();
+                updateTimeDisplays(0, originalBuffer.duration);
+
+            } catch (err) {
+                console.error('Audio decoding error:', err);
+                showAlert('تعذر فك تشفير الملف الصوتي. تأكد من أن الملف غير tالف وبصيغة مدعومة.', 'error');
+            }
+        }
+
+        // ==========================================
+        // خوارزمية تطبيع النص العربي والتحقق من التخمين
+        // ==========================================
+        function normalizeArabicText(text) {
+            if (!text) return '';
+            return text
+                .toLowerCase()
+                // إزالة التشكيل والحركات العربية
+                .replace(/[\u064B-\u065F\u0670]/g, '')
+                // توحيد الألف (أ، إ، آ -> ا)
+                .replace(/[أإآ]/g, 'ا')
+                // توحيد التاء المربوطة والهاء (ة -> ه)
+                .replace(/ة/g, 'ه')
+                // توحيد الياء والألف المقصورة (ى -> ي)
+                .replace(/ى/g, 'ي')
+                // توحيد الهمزة على واو وياء
+                .replace(/ؤ/g, 'و')
+                .replace(/ئ/g, 'ي')
+                // إزالة علامات الترقيم والرموز الخاصة
+                .replace(/[^\w\s\u0600-\u06FF]/g, '')
+                // توحيد المسافات
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        // حساب مسافة ليفنشتاين لقياس نسبة التشابه بدقة
+        function calculateSimilarity(str1, str2) {
+            const s1 = normalizeArabicText(str1);
+            const s2 = normalizeArabicText(str2);
+            if (!s1 || !s2) return 0;
+            if (s1 === s2) return 100;
+
+            const len1 = s1.length;
+            const len2 = s2.length;
+            const dp = Array.from({ length: len1 + 1 }, () => new Array(len2 + 1).fill(0));
+
+            for (let i = 0; i <= len1; i++) dp[i][0] = i;
+            for (let j = 0; j <= len2; j++) dp[0][j] = j;
+
+            for (let i = 1; i <= len1; i++) {
+                for (let j = 1; j <= len2; j++) {
+                    const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+                    dp[i][j] = Math.min(
+                        dp[i - 1][j] + 1,
+                        dp[i][j - 1] + 1,
+                        dp[i - 1][j - 1] + cost
+                    );
+                }
+            }
+
+            const maxLen = Math.max(len1, len2);
+            const distance = dp[len1][len2];
+            return Math.max(0, Math.round(((maxLen - distance) / maxLen) * 100));
+        }
+
+        // التحقق من إجابة المستخدم في وضع التخمين
+        function checkUserGuess() {
+            const guessInput = document.getElementById('guessInput');
+            const userGuess = guessInput.value.trim();
+
+            if (!userGuess) {
+                showAlert('اكتب تخمينك في الحقل أولاً قبل الضغط على زر التحقق!', 'info');
+                guessInput.focus();
+                return;
+            }
+
+            const similarity = calculateSimilarity(userGuess, secretPhrase);
+            const feedbackBox = document.getElementById('guessFeedbackBox');
+            const feedbackText = document.getElementById('guessFeedbackText');
+            const feedbackIcon = document.getElementById('guessFeedbackIcon');
+            const scoreBadge = document.getElementById('similarityScoreBadge');
+            // اعتبار الإجابة صحيحة حسب مستوى الصعوبة (سهل/متوسط: 85%، صعب: 95%)
+            const requiredScore = difficultyLevel === 'hard' ? 95 : 85;
+            if (similarity >= requiredScore) {
+                stopHelperPlayback();
+                isOriginalLocked = false;
+                hideAlert();
+                updateGuessChallengeUI();
+                
+                // تشغيل الصوت الأصلي تلقائياً كمكافأة عند فتح القفل
+                switchMode('original');
+                startPlayback();
+            } else {
+                feedbackBox.classList.remove('hidden', 'bg-rose-500/10', 'border-rose-500/30', 'text-rose-200', 'bg-amber-500/10', 'border-amber-500/30', 'text-amber-200');
+                scoreBadge.textContent = `${similarity}%`;
+
+                // اهتزاز خفيف لحقل الإدخال
+                guessInput.classList.remove('animate-shake');
+                void guessInput.offsetWidth;
+                guessInput.classList.add('animate-shake');
+
+                if (similarity >= 55) {
+                    feedbackBox.classList.add('bg-amber-500/10', 'border-amber-500/30', 'text-amber-800', 'dark:text-amber-200');
+                    feedbackIcon.setAttribute('data-lucide', 'flame');
+                    feedbackText.textContent = 'قريب جداً! أعد سماع الصوت المعكوس بدقة وحاول مجدداً.';
+                } else {
+                    feedbackBox.classList.add('bg-rose-500/10', 'border-rose-500/30', 'text-rose-800', 'dark:text-rose-200');
+                    feedbackIcon.setAttribute('data-lucide', 'x-circle');
+                    feedbackText.textContent = 'تخمين غير صحيح، استمع للمقطع المعكوس مرة أخرى وحاول!';
+                }
+                lucide.createIcons();
+            }
+        }
+
+        // الخوارزمية الأساسية لعكس بيانات AudioBuffer عبر جميع القنوات الصوتية
+        function createReversedAudioBuffer(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const length = buffer.length;
+            const sampleRate = buffer.sampleRate;
+
+            const revBuffer = audioCtx.createBuffer(numChannels, length, sampleRate);
+
+            for (let channel = 0; channel < numChannels; channel++) {
+                const inputData = buffer.getChannelData(channel);
+                const outputData = revBuffer.getChannelData(channel);
+
+                // نسخ العينات بترتيب عكسي من النهاية إلى البداية
+                for (let i = 0; i < length; i++) {
+                    outputData[i] = inputData[length - 1 - i];
+                }
+            }
+
+            return revBuffer;
+        }
+
+        // ==========================================
+        // 6. المشغل الصوتي المزدوج والتنقل التفاعلي
+        // ==========================================
+        function switchMode(mode) {
+            if (!originalBuffer || !reversedBuffer) return;
+
+            const wasPlaying = isPlaying;
+            if (wasPlaying) {
+                pausePlayback();
+            }
+
+            currentMode = mode;
+            const revBtn = document.getElementById('modeReversedBtn');
+            const origBtn = document.getElementById('modeOriginalBtn');
+            const badge = document.getElementById('modeBadge');
+
+            if (mode === 'reversed') {
+                revBtn.className = 'px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 bg-studio-accent text-white shadow';
+                origBtn.className = 'px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white';
+                badge.textContent = 'الوضع: معكوس زمنياً';
+                badge.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-studio-accent/20 text-studio-accent border border-studio-accent/30 backdrop-blur-sm pointer-events-none';
+            } else {
+                origBtn.className = 'px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 bg-studio-cyan text-zinc-950 shadow';
+                revBtn.className = 'px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white';
+                badge.textContent = 'الوضع: الصوت الأصلي';
+                badge.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-studio-cyan/20 text-cyan-700 dark:text-studio-cyan border border-studio-cyan/30 backdrop-blur-sm pointer-events-none';
+            }
+
+            drawStaticWaveform();
+
+            if (wasPlaying) {
+                startPlayback();
+            }
+        }
+
+        function getActiveBuffer() {
+            return currentMode === 'reversed' ? reversedBuffer : originalBuffer;
+        }
+
+        function togglePlayback() {
+            if (isPlaying) {
+                pausePlayback();
+            } else {
+                startPlayback();
+            }
+        }
+
+        function startPlayback() {
+            const buffer = getActiveBuffer();
+            if (!buffer) return;
+
+            initAudioContext();
+
+            // إذا وصل المؤشر للنهاية، نعيده للبداية تلقائياً
+            if (pauseOffset >= buffer.duration) {
+                pauseOffset = 0;
+            }
+
+            activeSourceNode = audioCtx.createBufferSource();
+            activeSourceNode.buffer = buffer;
+            activeSourceNode.connect(audioCtx.destination);
+
+            playbackStartTime = audioCtx.currentTime - pauseOffset;
+            activeSourceNode.start(0, pauseOffset);
+            isPlaying = true;
+            updatePlayPauseButton(true);
+
+            // حلقة تحديث مؤشر التشغيل (Playhead)
+            function updatePlayheadLoop() {
+                if (!isPlaying) return;
+
+                const elapsed = audioCtx.currentTime - playbackStartTime;
+                if (elapsed >= buffer.duration) {
+                    stopPlayback();
+                    return;
+                }
+
+                updateTimeDisplays(elapsed, buffer.duration);
+                drawStaticWaveform(elapsed / buffer.duration);
+                playbackAnimId = requestAnimationFrame(updatePlayheadLoop);
+            }
+
+            playbackAnimId = requestAnimationFrame(updatePlayheadLoop);
+        }
+
+        function pausePlayback() {
+            if (!isPlaying) return;
+
+            if (activeSourceNode) {
+                try { activeSourceNode.stop(); } catch (e) {}
+                activeSourceNode.disconnect();
+                activeSourceNode = null;
+            }
+
+            pauseOffset = audioCtx.currentTime - playbackStartTime;
+            isPlaying = false;
+            cancelAnimationFrame(playbackAnimId);
+            updatePlayPauseButton(false);
+        }
+
+        function stopPlayback() {
+            if (activeSourceNode) {
+                try { activeSourceNode.stop(); } catch (e) {}
+                activeSourceNode.disconnect();
+                activeSourceNode = null;
+            }
+
+            isPlaying = false;
+            pauseOffset = 0;
+            cancelAnimationFrame(playbackAnimId);
+            updatePlayPauseButton(false);
+
+            const buffer = getActiveBuffer();
+            if (buffer) {
+                updateTimeDisplays(0, buffer.duration);
+                drawStaticWaveform(0);
+            }
+        }
+
+        function updatePlayPauseButton(playing) {
+            const icon = document.getElementById('playPauseIcon');
+            const text = document.getElementById('playPauseText');
+            if (playing) {
+                icon.setAttribute('data-lucide', 'pause');
+                text.textContent = 'إيقاف مؤقت';
+            } else {
+                icon.setAttribute('data-lucide', 'play');
+                text.textContent = 'تشغيل';
+            }
+            lucide.createIcons();
+        }
+
+        function updateTimeDisplays(current, total) {
+            document.getElementById('currentTimeDisplay').textContent = formatTime(current);
+            document.getElementById('totalDurationDisplay').textContent = formatTime(total);
+        }
+
+        // ==========================================
+        // 7. رسم الموجة الصوتية التفاعلية والتنقل (Scrubbing)
+        // ==========================================
+        function drawStaticWaveform(progress = null) {
+            const buffer = getActiveBuffer();
+            if (!buffer) return;
+
+            if (progress === null) {
+                progress = buffer.duration > 0 ? (pauseOffset / buffer.duration) : 0;
+            }
+            progress = Math.max(0, Math.min(1, progress));
+
+            const rect = waveformContainer.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+
+            waveCtx.clearRect(0, 0, width, height);
+
+            const channelData = buffer.getChannelData(0);
+            const totalSamples = channelData.length;
+            
+            // رسم أعمدة الموجة من اليسار لليمين (توافقاً مع التوقيت الزمني القياسي للموجات)
+            const barWidth = 3;
+            const gap = 2;
+            const totalBars = Math.floor(width / (barWidth + gap));
+            const samplesPerBar = Math.floor(totalSamples / totalBars);
+
+            const primaryColor = currentMode === 'reversed' ? '#6366f1' : '#06b6d4';
+            const computedStyles = getComputedStyle(document.documentElement);
+            const unplayedColor = computedStyles.getPropertyValue('--wave-unplayed').trim() || '#27272f';
+            const playheadColor = computedStyles.getPropertyValue('--wave-playhead').trim() || '#ffffff';
+
+            for (let i = 0; i < totalBars; i++) {
+                const startSample = i * samplesPerBar;
+                let maxAmp = 0;
+
+                // حساب أقصى سعة صوتية في هذا الجزء
+                for (let j = 0; j < samplesPerBar; j += Math.max(1, Math.floor(samplesPerBar / 20))) {
+                    const sampleVal = Math.abs(channelData[startSample + j] || 0);
+                    if (sampleVal > maxAmp) maxAmp = sampleVal;
+                }
+
+                const barHeight = Math.max(4, maxAmp * (height * 0.78));
+                const x = i * (barWidth + gap);
+                const y = (height - barHeight) / 2;
+
+                const barProgress = i / totalBars;
+                waveCtx.fillStyle = barProgress <= progress ? primaryColor : unplayedColor;
+
+                waveCtx.beginPath();
+                waveCtx.roundRect(x, y, barWidth, barHeight, 2);
+                waveCtx.fill();
+            }
+
+            // رسم خط مؤشر التشغيل (Playhead)
+            const playheadX = progress * width;
+            waveCtx.strokeStyle = playheadColor;
+            waveCtx.lineWidth = 2;
+            waveCtx.beginPath();
+            waveCtx.moveTo(playheadX, 0);
+            waveCtx.lineTo(playheadX, height);
+            waveCtx.stroke();
+
+            // دائرة صغيرة أعلى المؤشر
+            waveCtx.fillStyle = playheadColor;
+            waveCtx.beginPath();
+            waveCtx.arc(playheadX, 6, 4, 0, Math.PI * 2);
+            waveCtx.fill();
+        }
+
+        // تمكين المستخدم من النقر أو السحب على الموجة لتقديم/تأخير الصوت
+        function setupWaveformScrubbing() {
+            let isDragging = false;
+
+            function seekToPosition(clientX) {
+                const buffer = getActiveBuffer();
+                if (!buffer) return;
+
+                const rect = waveformContainer.getBoundingClientRect();
+                const clickX = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                const ratio = clickX / rect.width;
+                const newTime = ratio * buffer.duration;
+
+                const wasPlaying = isPlaying;
+                if (wasPlaying) pausePlayback();
+                
+                pauseOffset = newTime;
+                updateTimeDisplays(pauseOffset, buffer.duration);
+                drawStaticWaveform(ratio);
+
+                if (wasPlaying) startPlayback();
+            }
+
+            waveformContainer.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                seekToPosition(e.clientX);
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDragging) seekToPosition(e.clientX);
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            // دعم اللمس للهواتف الذكية
+            waveformContainer.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                if (e.touches.length > 0) seekToPosition(e.touches[0].clientX);
+            }, { passive: true });
+
+            waveformContainer.addEventListener('touchmove', (e) => {
+                if (isDragging && e.touches.length > 0) seekToPosition(e.touches[0].clientX);
+            }, { passive: true });
+
+            waveformContainer.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+        }
+
+        // ==========================================
+        // 8. تشفير وتنزيل الصوت المعكوس بصيغة WAV عالية الجودة
+        // ==========================================
+        function downloadReversedWav() {
+            if (!reversedBuffer) {
+                showAlert('لا يوجد صوت معكوس لتنزيله حالياً.', 'error');
+                return;
+            }
+
+            try {
+                const wavBlob = audioBufferToWav(reversedBuffer);
+                const url = URL.createObjectURL(wavBlob);
+                
+                const link = document.createElement('a');
+                link.style.display = 'none';
+                link.href = url;
+                
+                // تسمية الملف بالتاريخ والوقت
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+                link.download = `reversed-audio-${timestamp}.wav`;
+                
+                document.body.appendChild(link);
+                link.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 100);
+
+                showAlert('تم تجهيز وتنزيل ملف الصوت المعكوس بصيغة WAV بنجاح!', 'success');
+            } catch (err) {
+                console.error('WAV Export Error:', err);
+                showAlert('حدث خطأ أثناء تصدير ملف WAV.', 'error');
+            }
+        }
+
+        // تحويل AudioBuffer إلى ملف WAV قياسي (16-bit PCM)
+        function audioBufferToWav(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const format = 1; // PCM
+            const bitDepth = 16;
+
+            const bytesPerSample = bitDepth / 8;
+            const blockAlign = numChannels * bytesPerSample;
+
+            // دمج القنوات الصوتية (Interleaving)
+            const length = buffer.length;
+            const interleaved = new Float32Array(length * numChannels);
+            for (let channel = 0; channel < numChannels; channel++) {
+                const channelData = buffer.getChannelData(channel);
+                for (let i = 0; i < length; i++) {
+                    interleaved[i * numChannels + channel] = channelData[i];
+                }
+            }
+
+            const dataLength = interleaved.length * bytesPerSample;
+            const headerLength = 44;
+            const totalLength = headerLength + dataLength;
+
+            const arrayBuffer = new ArrayBuffer(totalLength);
+            const view = new DataView(arrayBuffer);
+
+            // كتابة ترويسة ملف WAV (RIFF Header)
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + dataLength, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true); // حجم قسم fmt
+            view.setUint16(20, format, true); // PCM = 1
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * blockAlign, true); // ByteRate
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitDepth, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataLength, true);
+
+            // كتابة عينات الصوت بصيغة 16-bit PCM
+            let offset = 44;
+            for (let i = 0; i < interleaved.length; i++, offset += 2) {
+                const sample = Math.max(-1, Math.min(1, interleaved[i]));
+                view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+            }
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+    </script>
+</body>
+</html>
